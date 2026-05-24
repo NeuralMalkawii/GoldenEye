@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { api, type Detection } from "@/lib/api";
 
-type Source = "webcam" | "screen";
+type Source = "webcam" | "screen" | "demo";
 type ConnState = "idle" | "connecting" | "live" | "error";
 
 type FrameResult = {
@@ -54,6 +54,7 @@ export default function LivePage() {
   const [latestResult, setLatestResult] = useState<FrameResult | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const demoVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -73,6 +74,7 @@ export default function LivePage() {
     wsRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    demoVideoRef.current?.pause();
     setConn("idle");
     setLatestResult(null);
     setFps(0);
@@ -86,6 +88,16 @@ export default function LivePage() {
     setError("");
     setTotalDetections(0);
     fpsFrames.current = [];
+
+    // ── Demo mode: just play the pre-recorded video, no WebSocket needed
+    if (source === "demo") {
+      const dv = demoVideoRef.current;
+      if (!dv) return;
+      dv.currentTime = 0;
+      await dv.play().catch(() => {});
+      setConn("live");
+      return;
+    }
 
     try {
       const stream =
@@ -224,17 +236,27 @@ export default function LivePage() {
                 boxShadow: isLive ? "0 0 0 1px var(--amber-dim), 0 0 24px var(--amber-glow)" : "none",
               }}
             >
+              {/* Live stream (screen share / webcam) */}
               <video
                 ref={videoRef}
                 muted
                 playsInline
-                style={{ display: isLive ? "block" : "none", width: "100%", maxHeight: 520, objectFit: "contain" }}
+                style={{ display: isLive && source !== "demo" ? "block" : "none", width: "100%", maxHeight: 520, objectFit: "contain" }}
+              />
+
+              {/* Demo playback video */}
+              <video
+                ref={demoVideoRef}
+                playsInline
+                loop
+                style={{ display: isLive && source === "demo" ? "block" : "none", width: "100%", maxHeight: 520, objectFit: "contain" }}
+                src="/demo_flight.mp4"
               />
 
               {/* SVG overlay — viewBox = native resolution, width/height = display size */}
               <svg
                 ref={overlayRef}
-                style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
+                style={{ display: source === "demo" ? "none" : undefined, position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
                 preserveAspectRatio="none"
               />
 
@@ -273,10 +295,14 @@ export default function LivePage() {
               )}
             </div>
 
-            {/* Tip about screen share content */}
             {isLive && source === "screen" && (
               <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--sand-faint)" }}>
                 Tip: For best results, open SAR images full-screen or zoom in — tiny figures at high altitude may be below detection threshold.
+              </p>
+            )}
+            {isLive && source === "demo" && (
+              <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--sand-faint)" }}>
+                Simulation: lawnmower scan at 50 m altitude over Shaheen 4K imagery. Run <code style={{ fontSize: "0.7rem", color: "var(--amber)" }}>python simulation/fly_simulation.py</code> to regenerate.
               </p>
             )}
           </div>
@@ -289,31 +315,39 @@ export default function LivePage() {
                 Source
               </p>
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                {(["screen", "webcam"] as Source[]).map((s) => (
+                {([
+                  { id: "screen", label: "Screen share" },
+                  { id: "webcam", label: "Webcam" },
+                  { id: "demo",   label: "Sim demo" },
+                ] as { id: Source; label: string }[]).map(({ id, label }) => (
                   <button
-                    key={s}
+                    key={id}
                     type="button"
-                    onClick={() => setSource(s)}
+                    onClick={() => setSource(id)}
                     disabled={isLive}
                     style={{
                       flex: 1,
                       padding: "0.5rem",
                       borderRadius: 4,
-                      fontSize: "0.78rem",
+                      fontSize: "0.75rem",
                       fontWeight: 700,
-                      letterSpacing: "0.05em",
-                      textTransform: "capitalize",
+                      letterSpacing: "0.04em",
                       cursor: isLive ? "default" : "pointer",
                       transition: "all 0.12s",
-                      background: source === s ? "var(--amber-glow)" : "var(--surface)",
-                      border: `1px solid ${source === s ? "var(--amber-dim)" : "var(--border)"}`,
-                      color: source === s ? "var(--amber)" : "var(--sand-dim)",
+                      background: source === id ? "var(--amber-glow)" : "var(--surface)",
+                      border: `1px solid ${source === id ? "var(--amber-dim)" : "var(--border)"}`,
+                      color: source === id ? "var(--amber)" : "var(--sand-dim)",
                     }}
                   >
-                    {s === "screen" ? "Screen share" : "Webcam"}
+                    {label}
                   </button>
                 ))}
               </div>
+              {source === "demo" && (
+                <p style={{ marginTop: "0.5rem", fontSize: "0.72rem", color: "var(--sand-faint)", lineHeight: 1.5 }}>
+                  Plays a pre-recorded UAV simulation over real Shaheen 4K imagery. No API connection needed.
+                </p>
+              )}
             </div>
 
             {/* Live stats */}
