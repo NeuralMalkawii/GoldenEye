@@ -1,0 +1,58 @@
+site_name: GoldenEye SAR
+site_description: Edge-deployable human detection for aerial Search & Rescue
+site_author: Omar Malkawi, Hamza Jad Allah, Suhaib Alajami
+repo_url: https://github.com/neuralmalkawii/GoldenEye
+repo_name: neuralmalkawii/GoldenEye
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: amber
+    accent: deep orange
+  font:
+    text: Inter
+    code: Fira Code
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Data:
+    - Overview: data/overview.md
+    - Datasets: data/datasets.md
+    - Preprocessing: data/preprocessing.md
+  - Inference:
+    - ONNX Engine: inference/onnx_engine.md
+    - Model Card: inference/model_card.md
+  - API Reference:
+    - Endpoints: api/endpoints.md
+    - WebSocket: api/websocket.md
+  - Deployment:
+    - Docker: deployment/docker.md
+    - Vercel + Railway: deployment/cloud.md
+    - Edge (Pi 5 + Hailo): deployment/edge.md
+  - Evaluation:
+    - Test Results: evaluation/results.md
+    - Altitude Robustness: evaluation/altitude.md
+    - Cross-Environment: evaluation/cross_env.md
+  - Decision Log: decisions.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+
+plugins:
+  - search

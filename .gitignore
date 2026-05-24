@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+
+# Models (large binary files — track via DVC or HF Hub)
+models/*.onnx
+models/*.pt
+models/*.hef
+*.pt.zip
+
+# Environment
+.env
+
+# Node / Next.js
+src/frontend/node_modules/
+src/frontend/.next/
+src/frontend/out/
+
+# Jobs / uploads (runtime artifacts)
+jobs/
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

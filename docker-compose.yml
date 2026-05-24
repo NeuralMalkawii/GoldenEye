@@ -1,0 +1,55 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MODEL_PATH=models/best.onnx
+      - CONFIDENCE_THRESHOLD=0.25
+      - NMS_IOU_THRESHOLD=0.45
+      - CORS_ORIGINS=http://localhost:3000
+    volumes:
+      - ./models:/app/models:ro
+      - ./jobs:/app/jobs
+      - ./uploads:/app/uploads
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    command: celery -A src.api.workers worker --loglevel=info --concurrency=2
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MODEL_PATH=models/best.onnx
+      - CONFIDENCE_THRESHOLD=0.25
+    volumes:
+      - ./models:/app/models:ro
+      - ./jobs:/app/jobs
+      - ./uploads:/app/uploads
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: src/frontend
+      dockerfile: ../../deploy/docker/frontend.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped

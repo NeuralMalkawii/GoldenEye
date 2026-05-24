@@ -1,0 +1,470 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Tailwind v4 theme mapping ── */
+@theme inline {
+  --font-display:   var(--font-fraunces);
+  --font-sans:      var(--font-syne);
+  --font-mono:      var(--font-fira-code);
+  --font-arabic:    var(--font-noto-naskh);
+
+  --color-void:         var(--void);
+  --color-surface:      var(--surface);
+  --color-card:         var(--card-bg);
+  --color-card-raised:  var(--card-raised);
+  --color-border:       var(--border);
+  --color-border-lit:   var(--border-lit);
+  --color-amber:        var(--amber);
+  --color-amber-bright: var(--amber-bright);
+  --color-amber-dim:    var(--amber-dim);
+  --color-terra:        var(--terra);
+  --color-sand:         var(--sand);
+  --color-sand-dim:     var(--sand-dim);
+  --color-success:      var(--success);
+
+  --color-background:         var(--void);
+  --color-foreground:         var(--sand);
+  --color-primary:            var(--amber);
+  --color-primary-foreground: var(--void);
+  --color-muted:              var(--card-raised);
+  --color-muted-foreground:   var(--sand-dim);
+  --color-accent:             var(--amber-dim);
+  --color-accent-foreground:  var(--amber-bright);
+  --color-destructive:        var(--terra);
+  --color-ring:               var(--amber-dim);
+  --color-input:              var(--card-raised);
+  --color-popover:            var(--card-bg);
+  --color-popover-foreground: var(--sand);
+  --color-secondary:          var(--card-raised);
+  --color-secondary-foreground: var(--sand);
+  --radius: 0.375rem;
+}
+
+/* ── Design tokens — always-dark desert ops palette ── */
+:root {
+  --void:        oklch(0.08 0.008 54);
+  --surface:     oklch(0.11 0.008 54);
+  --card-bg:     oklch(0.14 0.008 54);
+  --card-raised: oklch(0.18 0.009 54);
+  --border:      oklch(0.24 0.009 54);
+  --border-lit:  oklch(0.32 0.012 54);
+
+  --amber:        oklch(0.72 0.135 70);
+  --amber-bright: oklch(0.78 0.140 72);
+  --amber-dim:    oklch(0.42 0.080 62);
+  --amber-glow:   oklch(0.72 0.135 70 / 0.12);
+
+  --terra:        oklch(0.54 0.150 38);
+  --terra-glow:   oklch(0.54 0.150 38 / 0.14);
+
+  --sand:      oklch(0.88 0.025 84);
+  --sand-dim:  oklch(0.62 0.020 72);
+  --sand-faint:oklch(0.32 0.012 54);
+
+  --success:     oklch(0.58 0.085 155);
+  --success-glow:oklch(0.58 0.085 155 / 0.14);
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--void);
+  color: var(--sand);
+  font-family: var(--font-syne, 'Syne', sans-serif);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100dvh;
+}
+
+/* ── Islamic star lattice background texture ──
+   12-pointed star at very low opacity — contextually appropriate for this
+   Arabic-influenced desert operations product */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23e8a020' stroke-width='0.5' opacity='0.22'%3E%3Cpolygon points='48,4 54,20 68,12 62,28 78,28 68,40 78,52 62,52 68,68 54,60 48,76 42,60 28,68 34,52 18,52 28,40 18,28 34,28 28,12 42,20' /%3E%3Ccircle cx='48' cy='40' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 96px 96px;
+  opacity: 0.28;
+}
+
+body > * { position: relative; z-index: 1; }
+
+/* ── Typography scale ── */
+.font-display { font-family: var(--font-fraunces, Georgia, serif); font-optical-sizing: auto; }
+.font-data    { font-family: var(--font-fira-code, monospace); }
+.font-arabic  { font-family: var(--font-noto-naskh, serif); direction: rtl; }
+
+/* ── Component primitives ── */
+.ge-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.ge-card-raised {
+  background: var(--card-raised);
+  border: 1px solid var(--border-lit);
+  border-radius: 6px;
+}
+
+.ge-amber-ring {
+  box-shadow: 0 0 0 1px var(--amber-dim), 0 0 24px var(--amber-glow);
+}
+
+.ge-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: var(--amber);
+  color: var(--void);
+  font-family: var(--font-syne);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.ge-btn:hover   { background: var(--amber-bright); }
+.ge-btn:active  { transform: scale(0.97); }
+
+.ge-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  color: var(--sand-dim);
+  font-family: var(--font-syne);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-lit);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.ge-btn-ghost:hover { color: var(--amber); border-color: var(--amber-dim); }
+
+/* ── Scanline loading shimmer ── */
+@keyframes scanline {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(500%); opacity: 0; }
+}
+
+.scanline {
+  position: relative;
+  overflow: hidden;
+}
+.scanline::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 40%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    oklch(0.72 0.135 70 / 0.06) 40%,
+    oklch(0.72 0.135 70 / 0.10) 50%,
+    oklch(0.72 0.135 70 / 0.06) 60%,
+    transparent 100%
+  );
+  animation: scanline 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── Skeleton ── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.65; }
+}
+.skeleton {
+  background: var(--card-raised);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+}
+
+/* ── Bounding box detection animation ── */
+@keyframes bbox-draw {
+  from { opacity: 0; stroke-dashoffset: 200; }
+  to   { opacity: 1; stroke-dashoffset: 0; }
+}
+.bbox-line {
+  stroke-dasharray: 200;
+  animation: bbox-draw 0.25s ease-out forwards;
+}
+
+/* ── Page enter animation ── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter { animation: page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ── Amber pulse — used on "live" indicator ── */
+@keyframes amber-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--amber-glow); }
+  50%       { box-shadow: 0 0 0 6px transparent; }
+}
+.amber-pulse { animation: amber-pulse 1.6s ease-in-out infinite; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--amber-dim); }
+
+/* ── Selection ── */
+::selection { background: var(--amber-dim); color: var(--sand); }
+
+/* ── Focus visible ── */
+:focus-visible {
+  outline: 2px solid var(--amber-dim);
+  outline-offset: 2px;
+}
+
+/* ── Gradient text utility ── */
+.gradient-amber {
+  background: linear-gradient(135deg, var(--amber), var(--amber-bright) 60%, var(--sand));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Horizontal rule ── */
+.ge-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+/* ── Status badge ── */
+.badge-amber {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--amber-glow);
+  border: 1px solid var(--amber-dim);
+  border-radius: 99px;
+  color: var(--amber-bright);
+  font-family: var(--font-fira-code);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.badge-terra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--terra-glow);
+  border: 1px solid var(--terra);
+  border-radius: 99px;
+  color: var(--terra);
+  font-family: var(--font-fira-code);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.badge-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--success-glow);
+  border: 1px solid var(--success);
+  border-radius: 99px;
+  color: var(--success);
+  font-family: var(--font-fira-code);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+/* ── Mode card hover (server-component-safe CSS-only hover) ── */
+.mode-card {
+  text-decoration: none;
+  display: block;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.75rem;
+  transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+  color: inherit;
+}
+.mode-card:hover {
+  border-color: var(--amber-dim);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--amber-dim), 0 0 24px var(--amber-glow);
+}
+
+/* ── Drop zone ── */
+.dropzone-idle {
+  border: 2px dashed var(--border-lit);
+  background: var(--surface);
+  border-radius: 8px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone-active {
+  border-color: var(--amber);
+  background: var(--amber-glow);
+}
+
+/* ── Hero image scan + detection reveal (7s infinite loop) ── */
+
+/*
+ * Full 7s cycle:
+ *   0 – 2.2s  (0–31.43%)   scan sweeps top→bottom, opacity 1
+ *   2.2 – 3s  (31.43–42.86%) scan fades out at bottom
+ *   3 – 7s    (42.87–100%)  scan invisible, reset to top
+ *
+ * Detection elements appear just after scan completes and hide
+ * before the next cycle resets everything.
+ */
+@keyframes hero-scan-cycle {
+  0%      { transform: translateY(-100%); opacity: 1; }
+  31.43%  { transform: translateY(0);     opacity: 1; }
+  42.86%  { transform: translateY(0);     opacity: 0; }
+  42.87%  { transform: translateY(-100%); opacity: 0; }
+  100%    { transform: translateY(-100%); opacity: 0; }
+}
+
+/* Detection box + HUD bar */
+@keyframes hero-det-cycle {
+  0%      { opacity: 0; }
+  32.14%  { opacity: 0; }  /* 2.25s — scan just finished */
+  37.14%  { opacity: 1; }  /* 2.6s  — fully visible */
+  71.43%  { opacity: 1; }  /* 5.0s  — start fade */
+  78.57%  { opacity: 0; }  /* 5.5s  — hidden */
+  100%    { opacity: 0; }
+}
+
+/* Label — tiny offset after detection box */
+@keyframes hero-det-label-cycle {
+  0%      { opacity: 0; }
+  35%     { opacity: 0; }  /* 2.45s */
+  39.29%  { opacity: 1; }  /* 2.75s */
+  71.43%  { opacity: 1; }  /* 5.0s */
+  78.57%  { opacity: 0; }  /* 5.5s */
+  100%    { opacity: 0; }
+}
+
+/* Center ping expands and fades — parent opacity hides it outside visible window */
+@keyframes hero-ping {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  100% { transform: scale(2.8); opacity: 0;   }
+}
+
+.hero-scan-inner {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.72 0.135 70 / 0.03) 85%,
+    oklch(0.72 0.135 70 / 0.07) 100%
+  );
+  animation: hero-scan-cycle 7s linear infinite;
+}
+.hero-scan-inner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.72 0.135 70 / 0.4) 8%,
+    var(--amber) 25%,
+    oklch(0.78 0.14 72) 50%,
+    var(--amber) 75%,
+    oklch(0.72 0.135 70 / 0.4) 92%,
+    transparent 100%
+  );
+  box-shadow: 0 0 6px 1px var(--amber), 0 0 18px 4px var(--amber-glow);
+}
+
+.hero-det-appear {
+  position: absolute;
+  opacity: 0;
+  z-index: 3;
+  animation: hero-det-cycle 7s linear infinite;
+}
+
+.hero-det-label-appear {
+  opacity: 0;
+  animation: hero-det-label-cycle 7s linear infinite;
+}
+
+/* Tactical corner marks */
+.hero-corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+}
+.hero-corner-tl { top: 0;  left: 0;  border-top:    2px solid var(--amber); border-left:  2px solid var(--amber); }
+.hero-corner-tr { top: 0;  right: 0; border-top:    2px solid var(--amber); border-right: 2px solid var(--amber); }
+.hero-corner-bl { bottom: 0; left: 0;  border-bottom: 2px solid var(--amber); border-left:  2px solid var(--amber); }
+.hero-corner-br { bottom: 0; right: 0; border-bottom: 2px solid var(--amber); border-right: 2px solid var(--amber); }
+
+/* Centre ping ring */
+.hero-ping {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.hero-ping::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--amber);
+  animation: hero-ping 1.4s ease-out infinite;
+}
+
+/* HUD overlay bar at bottom of image */
+.hero-hud-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.35rem 0.75rem;
+  background: oklch(0.08 0.008 54 / 0.75);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 3;
+  backdrop-filter: blur(4px);
+}
