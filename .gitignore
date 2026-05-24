@@ -24,9 +24,10 @@ src/frontend/node_modules/
 src/frontend/.next/
 src/frontend/out/
 
-# Jobs / uploads (runtime artifacts)
+# Jobs / uploads / simulation outputs (runtime artifacts)
 jobs/
 uploads/
+simulation/output/
 
 # OS
 .DS_Store
@@ -35,3 +36,5 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+.agents
+skills-lock.json
