@@ -1,3 +1,5 @@
+// NEXT_PUBLIC_API_URL must be set in production (e.g. https://goldeneye-api.railway.app).
+// The localhost fallback is only valid for local development.
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type Detection = {
@@ -45,10 +47,11 @@ export type ModelInfo = {
 export const api = {
   health: () => fetch(`${BASE}/api/health`).then((r) => r.json()),
 
-  detectImage: async (file: File): Promise<ImageResult> => {
+  detectImage: async (file: File, mode: "full" | "sahi" = "full"): Promise<ImageResult> => {
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch(`${BASE}/api/detect/image`, { method: "POST", body: form });
+    const url = `${BASE}/api/detect/image?mode=${mode}`;
+    const res = await fetch(url, { method: "POST", body: form });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },

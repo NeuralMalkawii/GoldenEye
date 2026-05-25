@@ -334,7 +334,8 @@ def main():
     )
 
     # ── Save CSV
-    csv_path = args.output.replace(".mp4", "_results.csv")
+    out = Path(args.output)
+    csv_path = str(out.with_name(out.stem + "_results.csv"))
     with open(csv_path, "w", newline="") as f:
         writer = csv.DictWriter(
             f, fieldnames=["frame_id", "cx", "cy", "altitude_m", "count", "inference_ms"]

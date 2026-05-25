@@ -50,7 +50,7 @@ export default function RootLayout({
         ${notoNaskhArabic.variable}
       `}
     >
-      <body className="min-h-dvh flex flex-col antialiased">{children}</body>
+      <body className="min-h-dvh flex flex-col antialiased" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

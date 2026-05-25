@@ -13,13 +13,6 @@ from pydantic import BaseModel, Field
 # ---------------------------------------------------------------------------
 
 
-class BoundingBox(BaseModel):
-    x1: float
-    y1: float
-    x2: float
-    y2: float
-
-
 class DetectionItem(BaseModel):
     bbox: list[float] = Field(..., min_length=4, max_length=4)
     confidence: float

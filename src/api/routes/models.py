@@ -1,50 +1,90 @@
-"""Model registry endpoints — list and switch the active model."""
+"""Model registry endpoints — list available .onnx files and hot-swap active model."""
 
 from __future__ import annotations
 
+import asyncio
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Request
 
+from src.api.config import get_settings
 from src.api.inference.onnx_engine import ONNXEngine
-from src.api.schemas import ModelInfo, ModelSelectRequest, ModelSelectResponse, ModelsListResponse
+from src.api.schemas import (
+    ModelInfo,
+    ModelSelectRequest,
+    ModelSelectResponse,
+    ModelsListResponse,
+)
 
 router = APIRouter(prefix="/api/models", tags=["models"])
+
+# Single-process lock: serialise hot-swap so a concurrent /api/models/select
+# call can't replace app.state.engine while another request is mid-read.
+_swap_lock = asyncio.Lock()
+
+MODELS_DIR = Path("models")
+
+
+def _active_name(engine: ONNXEngine) -> str:
+    return Path(engine.metadata["model_path"]).name
+
+
+def _list_files() -> list[Path]:
+    if not MODELS_DIR.is_dir():
+        return []
+    return sorted(p for p in MODELS_DIR.glob("*.onnx") if p.is_file())
 
 
 @router.get("", response_model=ModelsListResponse)
 async def list_models(request: Request):
     engine: ONNXEngine = request.app.state.engine
+    active = _active_name(engine)
     meta = engine.metadata
-    return ModelsListResponse(
-        models=[
-            ModelInfo(
-                name=meta["model_path"].split("/")[-1].split("\\")[-1],
-                path=meta["model_path"],
-                input_size=meta["input_size"],
-                provider=meta["provider"],
-                confidence_threshold=meta["confidence_threshold"],
-                nms_iou_threshold=meta["nms_iou_threshold"],
-                active=True,
-            )
-        ],
-        active_model=meta["model_path"].split("/")[-1].split("\\")[-1],
-    )
+
+    files = _list_files()
+    if not any(p.name == active for p in files):
+        # Active model lives outside models/ (e.g. test fixture) — still expose it
+        files = [Path(meta["model_path"]), *files]
+
+    models = [
+        ModelInfo(
+            name=p.name,
+            path=str(p),
+            input_size=ONNXEngine.INPUT_SIZE,
+            provider=meta["provider"] if p.name == active else "lazy",
+            confidence_threshold=meta["confidence_threshold"],
+            nms_iou_threshold=meta["nms_iou_threshold"],
+            active=p.name == active,
+        )
+        for p in files
+    ]
+    return ModelsListResponse(models=models, active_model=active)
 
 
 @router.post("/select", response_model=ModelSelectResponse)
 async def select_model(body: ModelSelectRequest, request: Request):
-    """Hot-swap the active model by name (filename in models/ directory)."""
-    from pathlib import Path
-    from src.api.config import get_settings
+    """Hot-swap the active model by filename. Serialised by _swap_lock."""
+    # Reject anything that resolves outside MODELS_DIR (no traversal)
+    name = Path(body.name).name
+    if name != body.name or not name.endswith(".onnx"):
+        raise HTTPException(status_code=400, detail="Invalid model name.")
+
+    candidate = MODELS_DIR / name
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail=f"Model '{name}' not found in models/.")
 
     settings = get_settings()
-    candidate = Path("models") / body.name
-    if not candidate.exists():
-        raise HTTPException(status_code=404, detail=f"Model file '{body.name}' not found in models/.")
+    async with _swap_lock:
+        loop = asyncio.get_running_loop()
+        # Loading an ONNX session is sync/CPU-bound — do it off the event loop
+        new_engine = await loop.run_in_executor(
+            None,
+            lambda: ONNXEngine(
+                candidate,
+                confidence_threshold=settings.confidence_threshold,
+                nms_iou_threshold=settings.nms_iou_threshold,
+            ),
+        )
+        request.app.state.engine = new_engine
 
-    engine = ONNXEngine(
-        candidate,
-        confidence_threshold=settings.confidence_threshold,
-        nms_iou_threshold=settings.nms_iou_threshold,
-    )
-    request.app.state.engine = engine
-    return ModelSelectResponse(active_model=body.name, message=f"Switched to {body.name}")
+    return ModelSelectResponse(active_model=name, message=f"Switched to {name}")

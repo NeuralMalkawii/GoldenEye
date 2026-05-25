@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { api, type Detection, type ImageResult } from "@/lib/api";
 
@@ -76,22 +76,42 @@ function DetectionOverlay({
   );
 }
 
+type Mode = "full" | "sahi";
+
 export default function DetectImagePage() {
   const [state, setState] = useState<State>({ phase: "idle" });
   const [dragOver, setDragOver] = useState(false);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0, nw: 0, nh: 0 });
+  const [mode, setMode] = useState<Mode>("full");
   const imgRef = useRef<HTMLImageElement>(null);
+  const currentObjectUrl = useRef<string | null>(null);
+
+  // Always free the previous blob URL — leaks otherwise grow per upload
+  const setStateWithUrlCleanup = useCallback((next: State) => {
+    setState((prev) => {
+      const prevUrl = prev.phase === "result" ? prev.objectUrl : null;
+      const nextUrl = next.phase === "result" ? next.objectUrl : null;
+      if (prevUrl && prevUrl !== nextUrl) URL.revokeObjectURL(prevUrl);
+      currentObjectUrl.current = nextUrl;
+      return next;
+    });
+  }, []);
+
+  // Free any outstanding blob URL on unmount
+  useEffect(() => () => {
+    if (currentObjectUrl.current) URL.revokeObjectURL(currentObjectUrl.current);
+  }, []);
 
   const process = useCallback(async (file: File) => {
-    setState({ phase: "loading" });
+    setStateWithUrlCleanup({ phase: "loading" });
     try {
-      const result = await api.detectImage(file);
+      const result = await api.detectImage(file, mode);
       const objectUrl = URL.createObjectURL(file);
-      setState({ phase: "result", result, objectUrl });
+      setStateWithUrlCleanup({ phase: "result", result, objectUrl });
     } catch (e: unknown) {
-      setState({ phase: "error", message: e instanceof Error ? e.message : String(e) });
+      setStateWithUrlCleanup({ phase: "error", message: e instanceof Error ? e.message : String(e) });
     }
-  }, []);
+  }, [setStateWithUrlCleanup, mode]);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -114,7 +134,7 @@ export default function DetectImagePage() {
     setImgSize({ w: el.clientWidth, h: el.clientHeight, nw: el.naturalWidth, nh: el.naturalHeight });
   };
 
-  const reset = () => setState({ phase: "idle" });
+  const reset = () => setStateWithUrlCleanup({ phase: "idle" });
 
   const downloadAnnotated = () => {
     if (state.phase !== "result") return;
@@ -290,23 +310,66 @@ export default function DetectImagePage() {
                 </div>
               </>
             ) : (
-              /* Placeholder panel */
-              <div className="ge-card" style={{ padding: "1.5rem", flex: 1 }}>
-                <p className="font-data mb-6" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                  How it works
-                </p>
-                {[
-                  ["01", "Upload any aerial or ground-level image."],
-                  ["02", "YOLOv8n runs inference via ONNX Runtime (~42 ms)."],
-                  ["03", "Bounding boxes and confidence scores are overlaid."],
-                  ["04", "Download the annotated image."],
-                ].map(([n, t]) => (
-                  <div key={n} className="flex gap-3 mb-4">
-                    <span className="font-data" style={{ fontSize: "0.7rem", color: "var(--amber)", minWidth: 20, marginTop: "0.1rem" }}>{n}</span>
-                    <span style={{ fontSize: "0.85rem", color: "var(--sand-dim)", lineHeight: 1.5 }}>{t}</span>
+              <>
+                {/* Mode toggle */}
+                <div className="ge-card" style={{ padding: "1.25rem" }}>
+                  <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                    Inference mode
+                  </p>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    {([
+                      { id: "full", label: "Full frame", hint: "Single 640 letterbox · fast" },
+                      { id: "sahi", label: "SAHI tiled", hint: "Overlapping tiles · 4K-grade" },
+                    ] as { id: Mode; label: string; hint: string }[]).map(({ id, label, hint }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setMode(id)}
+                        style={{
+                          flex: 1,
+                          padding: "0.6rem 0.5rem",
+                          borderRadius: 4,
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.04em",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          transition: "all 0.12s",
+                          background: mode === id ? "var(--amber-glow)" : "var(--surface)",
+                          border: `1px solid ${mode === id ? "var(--amber-dim)" : "var(--border)"}`,
+                          color: mode === id ? "var(--amber)" : "var(--sand-dim)",
+                        }}
+                      >
+                        <div>{label}</div>
+                        <div className="font-data" style={{ fontSize: "0.62rem", color: "var(--sand-faint)", letterSpacing: "0.02em", textTransform: "none", fontWeight: 400, marginTop: "0.2rem" }}>
+                          {hint}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
+                  <p style={{ marginTop: "0.6rem", fontSize: "0.72rem", color: "var(--sand-faint)", lineHeight: 1.5 }}>
+                    Use SAHI for 4K aerial imagery where targets are smaller than ~30 px.
+                  </p>
+                </div>
+
+                {/* Placeholder panel */}
+                <div className="ge-card" style={{ padding: "1.5rem", flex: 1 }}>
+                  <p className="font-data mb-6" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                    How it works
+                  </p>
+                  {[
+                    ["01", "Upload any aerial or ground-level image."],
+                    ["02", "YOLOv8n runs inference via ONNX Runtime (~42 ms / tile)."],
+                    ["03", "Bounding boxes and confidence scores are overlaid."],
+                    ["04", "Download the annotated image."],
+                  ].map(([n, t]) => (
+                    <div key={n} className="flex gap-3 mb-4">
+                      <span className="font-data" style={{ fontSize: "0.7rem", color: "var(--amber)", minWidth: 20, marginTop: "0.1rem" }}>{n}</span>
+                      <span style={{ fontSize: "0.85rem", color: "var(--sand-dim)", lineHeight: 1.5 }}>{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

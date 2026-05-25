@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -227,18 +228,123 @@ class TestMetrics:
 
 
 # ---------------------------------------------------------------------------
+# /ws/live — WebSocket live detection
+# ---------------------------------------------------------------------------
+
+class TestWebSocketLive:
+    def test_connection_accepts(self, client):
+        with client.websocket_connect("/ws/live") as ws:
+            assert ws is not None
+
+    def test_single_frame_returns_detection_schema(self, client):
+        with client.websocket_connect("/ws/live") as ws:
+            ws.send_bytes(_jpeg())
+            msg = ws.receive_json()
+            assert msg["frame_id"] == 0
+            assert "detections" in msg
+            assert "count" in msg
+            assert msg["count"] == len(msg["detections"])
+            for key in ("preprocess_ms", "inference_ms", "postprocess_ms"):
+                assert key in msg["timing"]
+
+    def test_frame_ids_increment(self, client):
+        with client.websocket_connect("/ws/live") as ws:
+            for _ in range(3):
+                ws.send_bytes(_jpeg())
+            ids = [ws.receive_json()["frame_id"] for _ in range(3)]
+            assert ids == [0, 1, 2]
+
+    def test_invalid_bytes_yields_error_frame(self, client):
+        """Garbage bytes should not kill the connection — engine raises, handler reports."""
+        with client.websocket_connect("/ws/live") as ws:
+            ws.send_bytes(b"not-a-jpeg")
+            msg = ws.receive_json()
+            assert msg["count"] == 0
+            assert msg["error"] is not None
+
+
+# ---------------------------------------------------------------------------
+# Path traversal — job_id must be a valid UUID
+# ---------------------------------------------------------------------------
+
+class TestJobIdValidation:
+    @pytest.mark.parametrize("bad_id", [
+        "../etc/passwd",
+        "..%2F..%2Fetc",
+        "not-a-uuid",
+        "00000000-XXXX-0000-0000-000000000000",
+    ])
+    def test_bad_job_id_rejected(self, client, bad_id):
+        r = client.get(f"/api/jobs/{bad_id}")
+        # Either 400 (invalid) or 404 (escaped chars hit a route that doesn't exist)
+        assert r.status_code in (400, 404)
+
+    def test_bad_job_id_on_mp4_rejected(self, client):
+        r = client.get("/api/jobs/not-a-uuid/result.mp4")
+        assert r.status_code in (400, 404)
+
+
+# ---------------------------------------------------------------------------
+# Image upload size cap — 413 before OOM
+# ---------------------------------------------------------------------------
+
+class TestImageSizeCap:
+    def test_oversize_image_rejected_413(self, client, monkeypatch):
+        """Upload larger than max_upload_mb must return 413 before reading whole body."""
+        # Shrink the cap to 1 MB so the test stays fast
+        from src.api import config, routes
+        settings = config.get_settings()
+        monkeypatch.setattr(settings, "max_upload_mb", 1)
+        # Routes import settings at module-load time, so patch there too
+        monkeypatch.setattr(routes.detect.settings, "max_upload_mb", 1)
+
+        big = b"\xff" * (2 * 1024 * 1024)  # 2 MB of junk, content-type=image is enough
+        r = client.post(
+            "/api/detect/image",
+            files={"file": ("big.jpg", big, "image/jpeg")},
+        )
+        assert r.status_code == 413
+
+
+# ---------------------------------------------------------------------------
 # Model regression: known positive image must detect >= 1 person
 # ---------------------------------------------------------------------------
 
-KNOWN_POSITIVE = r"C:\Users\Omar\Documents\Claude\Projects\Capstone\Datasets\real_data\images\test\human_0004282761.jpg"
+def _find_known_positive() -> Path | None:
+    """Locate a known-positive test image, in portability order.
+
+    Priority:
+      1. tests/fixtures/known_positive.jpg  (committed to repo, runs in CI)
+      2. $GOLDENEYE_REGRESSION_IMAGE        (env override for local dev)
+      3. The original Windows dev path      (back-compat)
+    """
+    import os
+
+    bundled = Path(__file__).parent / "fixtures" / "known_positive.jpg"
+    if bundled.exists():
+        return bundled
+
+    env = os.environ.get("GOLDENEYE_REGRESSION_IMAGE")
+    if env and Path(env).exists():
+        return Path(env)
+
+    legacy = Path(r"C:\Users\Omar\Documents\Claude\Projects\Capstone\Datasets\real_data\images\test\human_0004282761.jpg")
+    if legacy.exists():
+        return legacy
+
+    return None
+
+
+_KNOWN_POSITIVE = _find_known_positive()
+
 
 @pytest.mark.skipif(
-    not __import__("pathlib").Path(KNOWN_POSITIVE).exists(),
-    reason="real_data test set not available",
+    _KNOWN_POSITIVE is None,
+    reason="No regression fixture — drop a labeled image at tests/fixtures/known_positive.jpg",
 )
 class TestModelRegression:
     def test_known_positive_detects_person(self, client):
-        raw = open(KNOWN_POSITIVE, "rb").read()
+        raw = _KNOWN_POSITIVE.read_bytes()
         r = client.post(
             "/api/detect/image",
             files={"file": ("human.jpg", raw, "image/jpeg")},
@@ -246,11 +352,11 @@ class TestModelRegression:
         assert r.status_code == 200
         body = r.json()
         assert body["count"] >= 1, (
-            f"Regression: expected >= 1 person in {KNOWN_POSITIVE}, got {body['count']}"
+            f"Regression: expected >= 1 person in {_KNOWN_POSITIVE}, got {body['count']}"
         )
 
     def test_known_positive_confidence_above_threshold(self, client):
-        raw = open(KNOWN_POSITIVE, "rb").read()
+        raw = _KNOWN_POSITIVE.read_bytes()
         r = client.post(
             "/api/detect/image",
             files={"file": ("human.jpg", raw, "image/jpeg")},

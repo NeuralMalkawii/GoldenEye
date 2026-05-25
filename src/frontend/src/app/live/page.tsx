@@ -62,6 +62,8 @@ export default function LivePage() {
   const frameLoopRef = useRef<number | null>(null);
   const fpsFrames = useRef<number[]>([]);
   const activeRef = useRef(false);  // tracks whether session is alive
+  // Most recent encoded frame size — bboxes from the server are in this space
+  const encodedSize = useRef({ w: 0, h: 0 });
 
   const stopSession = useCallback(() => {
     activeRef.current = false;
@@ -140,15 +142,17 @@ export default function LivePage() {
         fpsFrames.current = [...fpsFrames.current.filter((t) => now - t < 1000), now];
         setFps(fpsFrames.current.length);
 
-        // KEY FIX: Set viewBox to native video resolution so boxes (in native coords)
-        // scale automatically to whatever display size the element has.
+        // Server returns bboxes in the *encoded* JPEG coordinate space.
+        // Match the SVG viewBox to that — not the native video size — so the
+        // 1280-cap downscale doesn't shift the boxes.
         const svg = overlayRef.current;
         if (svg) {
-          const nw = video.videoWidth;
-          const nh = video.videoHeight;
+          const { w: ew, h: eh } = encodedSize.current;
+          const vw = ew || video.videoWidth;
+          const vh = eh || video.videoHeight;
           const dw = video.clientWidth;
           const dh = video.clientHeight;
-          svg.setAttribute("viewBox", `0 0 ${nw} ${nh}`);
+          svg.setAttribute("viewBox", `0 0 ${vw} ${vh}`);
           svg.setAttribute("width", String(dw));
           svg.setAttribute("height", String(dh));
           svg.innerHTML = buildOverlaySVG(data.detections);
@@ -158,6 +162,11 @@ export default function LivePage() {
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext("2d")!;
       let sending = false;
+
+      // Cap encoded frame width — server letterboxes to 640 anyway, so anything
+      // above ~1280 wastes network without buying accuracy. 4K screen-shares
+      // would otherwise push ~500 KB JPEGs per frame.
+      const MAX_ENCODE_WIDTH = 1280;
 
       const sendFrame = () => {
         // Stop the loop if session ended
@@ -172,9 +181,14 @@ export default function LivePage() {
         const nh = video.videoHeight;
         if (!nw || !nh) return;
 
-        canvas.width = nw;
-        canvas.height = nh;
-        ctx.drawImage(video, 0, 0, nw, nh);
+        const scale = nw > MAX_ENCODE_WIDTH ? MAX_ENCODE_WIDTH / nw : 1;
+        const ew = Math.round(nw * scale);
+        const eh = Math.round(nh * scale);
+
+        canvas.width = ew;
+        canvas.height = eh;
+        ctx.drawImage(video, 0, 0, ew, eh);
+        encodedSize.current = { w: ew, h: eh };
 
         sending = true;
         canvas.toBlob((blob) => {

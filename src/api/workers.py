@@ -48,8 +48,21 @@ def process_video(self, job_id: str, input_path: str) -> dict:
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    writer = cv2.VideoWriter(str(out_video_path), fourcc, fps, (width, height))
+    # avc1 (H.264) plays natively in Safari / iOS; mp4v does not. Some OpenCV
+    # builds ship without libx264, so fall back to mp4v if avc1 fails to open.
+    writer = cv2.VideoWriter(
+        str(out_video_path),
+        cv2.VideoWriter_fourcc(*"avc1"),
+        fps,
+        (width, height),
+    )
+    if not writer.isOpened():
+        writer = cv2.VideoWriter(
+            str(out_video_path),
+            cv2.VideoWriter_fourcc(*"mp4v"),
+            fps,
+            (width, height),
+        )
 
     engine = _get_engine()
     rows: list[dict] = []

@@ -95,9 +95,12 @@ export default function MapPage() {
           {/* Detection log */}
           <div className="flex flex-col gap-4">
             <div className="ge-card" style={{ padding: "1.25rem" }}>
-              <p className="font-data mb-4" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                Detection log
-              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <p className="font-data" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>
+                  Detection log
+                </p>
+                <span className="badge-amber" style={{ fontSize: "0.6rem" }}>DEMO DATA</span>
+              </div>
               {mockPins.map((p) => (
                 <div key={p.id} style={{ padding: "0.65rem 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex justify-between items-center mb-0.5">

@@ -468,3 +468,70 @@ body > * { position: relative; z-index: 1; }
   z-index: 3;
   backdrop-filter: blur(4px);
 }
+
+/* ── About page prose ── */
+.prose-about p {
+  color: var(--sand-dim);
+  line-height: 1.8;
+  font-size: 0.93rem;
+  margin-bottom: 1rem;
+}
+.prose-about h3 {
+  color: var(--sand);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.01em;
+}
+.prose-about ol {
+  color: var(--sand-dim);
+  font-size: 0.93rem;
+  line-height: 1.8;
+  padding-left: 1.4rem;
+  margin-bottom: 1rem;
+}
+.prose-about ol li {
+  margin-bottom: 0.6rem;
+}
+.prose-about em {
+  color: var(--sand);
+  font-style: italic;
+}
+.prose-about strong {
+  color: var(--sand);
+}
+.prose-about code {
+  font-family: var(--font-fira-code), monospace;
+  font-size: 0.82em;
+  color: var(--amber);
+  background: var(--amber-glow);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.prose-about table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  margin-bottom: 1rem;
+}
+.prose-about th {
+  color: var(--amber);
+  font-family: var(--font-fira-code), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--amber-dim);
+}
+.prose-about td {
+  color: var(--sand-dim);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.prose-about td:first-child {
+  color: var(--sand);
+  white-space: nowrap;
+}

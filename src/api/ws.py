@@ -7,7 +7,7 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from src.api.inference.onnx_engine import ONNXEngine
-from src.api.schemas import WSDetectionFrame
+from src.api.schemas import DetectionItem, TimingInfo, WSDetectionFrame
 
 router = APIRouter(tags=["live"])
 
@@ -24,12 +24,10 @@ async def ws_live(websocket: WebSocket):
     """
     await websocket.accept()
     engine: ONNXEngine = websocket.app.state.engine
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=_BACKPRESSURE_LIMIT)
-    frame_id = 0
 
     async def receiver():
-        nonlocal frame_id
         try:
             while True:
                 data = await websocket.receive_bytes()
@@ -39,7 +37,6 @@ async def ws_live(websocket: WebSocket):
                     except asyncio.QueueEmpty:
                         pass
                 await queue.put(data)
-                frame_id += 1
         except WebSocketDisconnect:
             await queue.put(b"")  # sentinel
 
@@ -53,16 +50,23 @@ async def ws_live(websocket: WebSocket):
                 result = await loop.run_in_executor(None, engine.predict_bytes, data)
                 frame = WSDetectionFrame(
                     frame_id=fid,
-                    detections=[d.to_dict() for d in result.detections],  # type: ignore[arg-type]
+                    detections=[
+                        DetectionItem(bbox=[d.x1, d.y1, d.x2, d.y2], confidence=d.confidence, class_name=d.class_name)
+                        for d in result.detections
+                    ],
                     count=len(result.detections),
-                    timing=result.to_dict()["timing"],  # type: ignore[arg-type]
+                    timing=TimingInfo(
+                        preprocess_ms=result.preprocess_ms,
+                        inference_ms=result.inference_ms,
+                        postprocess_ms=result.postprocess_ms,
+                    ),
                 )
             except Exception as exc:
                 frame = WSDetectionFrame(
                     frame_id=fid,
                     detections=[],
                     count=0,
-                    timing={"preprocess_ms": 0, "inference_ms": 0, "postprocess_ms": 0},  # type: ignore[arg-type]
+                    timing=TimingInfo(preprocess_ms=0, inference_ms=0, postprocess_ms=0),
                     error=str(exc),
                 )
             try:
