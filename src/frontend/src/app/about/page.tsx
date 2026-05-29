@@ -433,9 +433,9 @@ export default function AboutPage() {
                     </p>
                     <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.25rem" }}>
                       {[
+                        { name: "Omar Malkawi",    href: "https://www.linkedin.com/in/omar-malkawi/" },
                         { name: "Hamza Jad Allah", href: "https://www.linkedin.com/in/hamza-jadallah/" },
                         { name: "Suhaib Alajami",  href: "https://www.linkedin.com/in/suhaibalajami/" },
-                        { name: "Omar Malkawi",    href: "https://www.linkedin.com/in/omar-malkawi/" },
                       ].map(({ name, href }) => (
                         <li key={href}>
                           <a
