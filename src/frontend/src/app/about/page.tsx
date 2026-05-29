@@ -428,11 +428,43 @@ export default function AboutPage() {
                     Authors and supervision
                   </h2>
                   <div className="ge-card" style={{ padding: "1.25rem 1.5rem" }}>
-                    <p style={{ fontSize: "0.9rem", color: "var(--sand)", lineHeight: 1.75, marginBottom: "0.75rem" }}>
-                      <strong>Authors:</strong> Hamza Jad Allah, Suhaib Alajami, Omar Malkawi.
+                    <p className="font-data mb-3" style={{ fontSize: "0.62rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      Authors
                     </p>
-                    <p style={{ fontSize: "0.9rem", color: "var(--sand-dim)", lineHeight: 1.75, marginBottom: "0.75rem" }}>
-                      <strong>Supervisor:</strong> Dr. Rami Al-Ouran, AlHussein Technical University.
+                    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                      {[
+                        { name: "Hamza Jad Allah", href: "https://www.linkedin.com/in/hamza-jadallah/" },
+                        { name: "Suhaib Alajami",  href: "https://www.linkedin.com/in/suhaibalajami/" },
+                        { name: "Omar Malkawi",    href: "https://www.linkedin.com/in/omar-malkawi/" },
+                      ].map(({ name, href }) => (
+                        <li key={href}>
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "var(--sand)", fontSize: "0.9rem", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--amber)" aria-hidden>
+                              <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM0 8h5v16H0V8zm7.5 0H12v2.2h.07c.63-1.2 2.17-2.46 4.47-2.46C21.4 7.74 24 10.06 24 14.6V24h-5v-8.4c0-2-.04-4.58-2.79-4.58-2.79 0-3.21 2.18-3.21 4.43V24h-5V8z" />
+                            </svg>
+                            {name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="font-data mb-2" style={{ fontSize: "0.62rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      Supervisor
+                    </p>
+                    <p style={{ fontSize: "0.9rem", color: "var(--sand-dim)", lineHeight: 1.75, marginBottom: "1.25rem" }}>
+                      <a
+                        href="https://htu.edu.jo/profile/dr--rami-alouran"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "var(--sand)", textDecoration: "none", borderBottom: "1px solid var(--amber-dim)" }}
+                      >
+                        Dr. Rami Al-Ouran
+                      </a>
+                      , AlHussein Technical University.
                     </p>
                     <p style={{ fontSize: "0.86rem", color: "var(--sand-dim)", lineHeight: 1.7 }}>
                       The private desert dataset used for fine-tuning was obtained from the
