@@ -6,10 +6,10 @@
 
 /* ── Tailwind v4 theme mapping ── */
 @theme inline {
-  --font-display:   var(--font-fraunces);
-  --font-sans:      var(--font-syne);
-  --font-mono:      var(--font-fira-code);
-  --font-arabic:    var(--font-noto-naskh);
+  --font-display:        var(--font-fraunces);
+  --font-sans:           var(--font-syne);
+  --font-mono:           var(--font-b612);
+  --font-typewriter:     var(--font-typewriter);
 
   --color-void:         var(--void);
   --color-surface:      var(--surface);
@@ -43,7 +43,10 @@
   --radius: 0.375rem;
 }
 
-/* ── Design tokens — always-dark desert ops palette ── */
+/* ── Design tokens — always-dark desert ops palette ──
+   Amber discipline: reserve --amber for ONLY (1) primary CTAs,
+   (2) active-state nav, (3) live detection markers, (4) wordmark accent.
+   Eyebrow labels, secondary data, hover hints → use --bronze. */
 :root {
   --void:        oklch(0.08 0.008 54);
   --surface:     oklch(0.11 0.008 54);
@@ -57,15 +60,47 @@
   --amber-dim:    oklch(0.42 0.080 62);
   --amber-glow:   oklch(0.72 0.135 70 / 0.12);
 
+  /* Bronze — desaturated amber for eyebrows / quiet data / labels.
+     Reads as "this is operational text" without screaming. */
+  --bronze:       oklch(0.62 0.062 65);
+  --bronze-dim:   oklch(0.48 0.045 60);
+
+  /* Copper — slightly red-shifted accent, used in hover states + verified stamp ink */
+  --copper:       oklch(0.60 0.118 45);
+
   --terra:        oklch(0.54 0.150 38);
   --terra-glow:   oklch(0.54 0.150 38 / 0.14);
+
+  /* Rust — for Wadi Rum mode + decorative ink stamps */
+  --rust:         oklch(0.48 0.135 27);
+  --rust-glow:    oklch(0.48 0.135 27 / 0.18);
 
   --sand:      oklch(0.88 0.025 84);
   --sand-dim:  oklch(0.62 0.020 72);
   --sand-faint:oklch(0.32 0.012 54);
 
+  /* Paper — warm cream for dossier/declassified sections. Very subtle. */
+  --paper:     oklch(0.92 0.022 88);
+  --ink:       oklch(0.22 0.018 60);
+
   --success:     oklch(0.58 0.085 155);
   --success-glow:oklch(0.58 0.085 155 / 0.14);
+}
+
+/* Wadi Rum mode — red sandstone palette. Toggled by hitting 'R'. */
+:root.wadi-rum {
+  --amber:        oklch(0.65 0.150 35);
+  --amber-bright: oklch(0.72 0.158 30);
+  --amber-dim:    oklch(0.42 0.110 25);
+  --amber-glow:   oklch(0.65 0.150 35 / 0.14);
+  --bronze:       oklch(0.55 0.080 30);
+  --bronze-dim:   oklch(0.42 0.065 28);
+  --void:         oklch(0.10 0.014 30);
+  --surface:      oklch(0.13 0.014 28);
+  --card-bg:      oklch(0.16 0.016 28);
+  --card-raised:  oklch(0.20 0.017 28);
+  --border:       oklch(0.27 0.022 28);
+  --border-lit:   oklch(0.36 0.030 28);
 }
 
 /* ── Base ── */
@@ -103,9 +138,9 @@ body::before {
 body > * { position: relative; z-index: 1; }
 
 /* ── Typography scale ── */
-.font-display { font-family: var(--font-fraunces, Georgia, serif); font-optical-sizing: auto; }
-.font-data    { font-family: var(--font-fira-code, monospace); }
-.font-arabic  { font-family: var(--font-noto-naskh, serif); direction: rtl; }
+.font-display     { font-family: var(--font-fraunces, Georgia, serif); font-optical-sizing: auto; }
+.font-data        { font-family: var(--font-b612, ui-monospace, monospace); font-feature-settings: "tnum" on, "ss01" on; }
+.font-typewriter  { font-family: var(--font-typewriter, "Courier New", monospace); }
 
 /* ── Component primitives ── */
 .ge-card {
@@ -219,6 +254,23 @@ body > * { position: relative; z-index: 1; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .page-enter { animation: page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ── Reduced motion ──
+   Users who set OS-level "reduce motion" get a static UI: animations either
+   never run or play once near-instantly. The kinetic hero/scan loop is the
+   biggest offender — fully disabled here. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Detection HUD elements: snap to their "visible" state instead of looping */
+  .hero-det-appear, .hero-det-label-appear { opacity: 1 !important; }
+  .hero-scan-inner { display: none !important; }
+  .scanline::after { display: none !important; }
+}
 
 /* ── Amber pulse — used on "live" indicator ── */
 @keyframes amber-pulse {
@@ -467,6 +519,48 @@ body > * { position: relative; z-index: 1; }
   justify-content: space-between;
   z-index: 3;
   backdrop-filter: blur(4px);
+}
+
+/* ── Footer link hover ── */
+.footer-link {
+  font-size: 0.78rem;
+  color: var(--sand-dim);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+.footer-link:hover { color: var(--amber); }
+
+/* ── Field log teletype marquee ── */
+@keyframes field-log-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.field-log-marquee {
+  animation: field-log-scroll 90s linear infinite;
+}
+.field-log-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* ── Falcon orbit (footer silhouette) ── */
+@keyframes falcon-orbit {
+  0%   { transform: translateX(0) translateY(0); }
+  50%  { transform: translateX(-60vw) translateY(-8px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+/* ── 404 falcon ── flies across, pauses off-screen, repeats */
+@keyframes falcon-flight {
+  0%   { transform: translateX(0)        translateY(0)   scaleX(1); }
+  45%  { transform: translateX(60vw)     translateY(-30px) scaleX(1); }
+  50%  { transform: translateX(120vw)    translateY(-30px) scaleX(1); opacity: 0; }
+  51%  { transform: translateX(-20vw)    translateY(20px)  scaleX(-1); opacity: 0; }
+  60%  { opacity: 0.55; }
+  95%  { transform: translateX(60vw)     translateY(20px)  scaleX(-1); opacity: 0.55; }
+  100% { transform: translateX(120vw)    translateY(20px)  scaleX(-1); opacity: 0; }
+}
+.not-found-falcon {
+  animation: falcon-flight 12s ease-in-out infinite;
 }
 
 /* ── About page prose ── */

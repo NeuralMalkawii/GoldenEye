@@ -47,11 +47,10 @@ export type ModelInfo = {
 export const api = {
   health: () => fetch(`${BASE}/api/health`).then((r) => r.json()),
 
-  detectImage: async (file: File, mode: "full" | "sahi" = "full"): Promise<ImageResult> => {
+  detectImage: async (file: File): Promise<ImageResult> => {
     const form = new FormData();
     form.append("file", file);
-    const url = `${BASE}/api/detect/image?mode=${mode}`;
-    const res = await fetch(url, { method: "POST", body: form });
+    const res = await fetch(`${BASE}/api/detect/image`, { method: "POST", body: form });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },

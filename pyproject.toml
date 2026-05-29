@@ -19,6 +19,7 @@ dependencies = [
     "websockets>=12",
     "python-dotenv",
     "pydantic-settings>=2",
+    "sentry-sdk[fastapi]>=2",
 ]
 
 [project.optional-dependencies]

@@ -19,8 +19,8 @@ _BACKPRESSURE_LIMIT = 4
 async def ws_live(websocket: WebSocket):
     """Bidirectional WebSocket: client sends raw image bytes, server replies with JSON detections.
 
-    The server runs inference in a thread pool so the event loop stays unblocked.
-    Backpressure: if the queue grows beyond BACKPRESSURE_LIMIT, oldest frames are dropped.
+    Inference runs in a thread pool so the event loop stays unblocked. If the queue
+    grows beyond BACKPRESSURE_LIMIT, the oldest frames are dropped.
     """
     await websocket.accept()
     engine: ONNXEngine = websocket.app.state.engine
@@ -51,7 +51,11 @@ async def ws_live(websocket: WebSocket):
                 frame = WSDetectionFrame(
                     frame_id=fid,
                     detections=[
-                        DetectionItem(bbox=[d.x1, d.y1, d.x2, d.y2], confidence=d.confidence, class_name=d.class_name)
+                        DetectionItem(
+                            bbox=[d.x1, d.y1, d.x2, d.y2],
+                            confidence=d.confidence,
+                            class_name=d.class_name,
+                        )
                         for d in result.detections
                     ],
                     count=len(result.detections),

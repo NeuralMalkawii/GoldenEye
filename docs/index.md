@@ -1,45 +1,48 @@
-# GoldenEye — SAR Detection System
+# GoldenEye — Aerial Human Detection for Desert SAR
 
-**GoldenEye** is a human detection system for aerial Search & Rescue operations in desert environments.
-It runs a YOLOv8n model fully offline — on a Raspberry Pi 5 with Hailo-8L acceleration — with no cloud required.
+**GoldenEye** is an AI-based aerial human-detection system aimed at assisting
+search-and-rescue (SAR) operations in desert environments. A YOLOv8n model,
+fine-tuned on a private desert dataset, identifies humans from drone-view
+imagery and returns bounding boxes with confidence scores. The system is
+designed for future edge deployment on a Raspberry Pi 5 with AI acceleration.
 
 ## Quick facts
 
-| | |
+|  |  |
 |---|---|
-| **Model** | YOLOv8n · ONNX opset 20 · 11.7 MB |
-| **mAP@0.5** | 0.979 on Shaheen real_data test split |
-| **Latency** | ~42 ms per frame on CPU |
-| **Deployment** | Web (Vercel + Railway) + Edge (Pi 5 + Hailo-8L) |
-| **Team** | Omar Malkawi · Hamza Jad Allah · Suhaib Alajami |
-| **Supervisor** | Dr. Rami Al-Ouran · HTU Capstone 2026 |
+| **Model** | YOLOv8n (3,005,843 parameters, 8.1 GFLOPs) |
+| **Class** | Single class — human |
+| **Test mAP@0.5** | 0.979 |
+| **Test precision / recall** | 0.975 / 0.985 |
+| **Inference time** | 2.7 ms/image on Tesla T4 GPU |
+| **Target hardware** | Raspberry Pi 5 with AI acceleration |
+| **Authors** | Hamza Jad Allah · Suhaib Alajami · Omar Malkawi |
+| **Supervisor** | Dr. Rami Al-Ouran · AlHussein Technical University |
 
 ## Detection modes
 
 | Mode | Path | Description |
 |---|---|---|
-| Image | `/detect/image` | Single-frame upload, annotated result in <100 ms |
-| Video | `/detect/video` | Async Celery processing, download MP4 + CSV |
-| Live | `/live` | Screen-share or webcam over WebSocket |
+| Image | `/detect/image` | Upload a single image; receive an annotated result |
+| Video | `/detect/video` | Upload a video; receive an annotated MP4 + per-frame CSV |
+| Live  | `/live`         | Stream camera or screen-share frames over WebSocket |
 
-## Getting started
+## Running locally
 
 ```bash
-# Clone
 git clone https://github.com/neuralmalkawii/GoldenEye
 cd GoldenEye
 
-# Start everything (Windows)
-start.bat
-
-# Or manually:
+# Backend
 python -m uvicorn src.api.main:app --port 8000 --reload
+
+# Frontend (in another shell)
 cd src/frontend && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Then open <http://localhost:3000>.
 
-## Acknowledgments
+## Acknowledgements
 
-The model and training data were contributed by the **Shaheen team** at the American University of Sharjah:
-Yousef Irshaid, Malik Hader, Adham Elmosalamy, Ahmad Alsaleh, Dr. Mohamed Alhajri.
+The private desert dataset used for fine-tuning was obtained from the **Shaheen
+project**. Their contribution is gratefully acknowledged.

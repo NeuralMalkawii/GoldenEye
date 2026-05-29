@@ -1,36 +1,58 @@
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 
-const modes = [
+type Mode = {
+  href: string;
+  title: string;
+  desc: string;
+  glyphPath: React.ReactNode;
+};
+
+const modes: Mode[] = [
   {
-    href:  "/detect/image",
-    glyph: "◈",
+    href: "/detect/image",
     title: "Image",
-    desc:  "Upload a single frame. See detected persons with confidence scores and annotated bounding boxes.",
-    tag:   "< 100ms",
+    desc: "Upload an aerial image. The model returns bounding boxes and confidence scores for any detected humans.",
+    glyphPath: (
+      <>
+        <rect x="4" y="6" width="20" height="14" rx="1" stroke="currentColor" strokeWidth="1.4" fill="none" />
+        <path d="M4 16 L10 11 L14 14 L18 9 L24 14" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="19" cy="10" r="1.5" fill="currentColor" />
+      </>
+    ),
   },
   {
-    href:  "/detect/video",
-    glyph: "▶",
+    href: "/detect/video",
     title: "Video",
-    desc:  "Upload any video file. Every frame is processed and returned as an annotated video with a detection CSV.",
-    tag:   "Async · Celery",
+    desc: "Upload a video file. Every frame is processed and returned as an annotated video with a detection CSV.",
+    glyphPath: (
+      <>
+        <rect x="3" y="6" width="18" height="14" rx="1" stroke="currentColor" strokeWidth="1.4" fill="none" />
+        <path d="M21 9 L26 6 L26 20 L21 17 Z" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinejoin="round" />
+        <path d="M9 11 L15 13 L9 16 Z" fill="currentColor" />
+      </>
+    ),
   },
   {
-    href:  "/live",
-    glyph: "◉",
+    href: "/live",
     title: "Live",
-    desc:  "Share your screen or webcam. Frames stream over WebSocket; detections appear in real time.",
-    tag:   "WebSocket",
+    desc: "Share a camera or screen. Frames are streamed over WebSocket; detections appear in real time.",
+    glyphPath: (
+      <>
+        <circle cx="14" cy="13" r="3" fill="currentColor" />
+        <circle cx="14" cy="13" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
+        <circle cx="14" cy="13" r="9.5" stroke="currentColor" strokeWidth="0.8" fill="none" opacity="0.35" />
+        <circle cx="14" cy="13" r="12.5" stroke="currentColor" strokeWidth="0.6" fill="none" opacity="0.18" />
+      </>
+    ),
   },
 ];
 
-const datasets = [
-  { name: "SARD",              count: "5,755",  domain: "General SAR" },
-  { name: "Shaheen Real",      count: "7,056",  domain: "UAE Desert 4K" },
-  { name: "Shaheen Synthetic", count: "59,820", domain: "Sim-to-real" },
-  { name: "HERIDAL",           count: "1,600",  domain: "Wilderness 12MP" },
-  { name: "Doron",             count: "616",    domain: "Aerial DJI" },
+const testMetrics: { label: string; value: string; sub: string }[] = [
+  { label: "Precision",  value: "0.975", sub: "on the test set" },
+  { label: "Recall",     value: "0.985", sub: "on the test set" },
+  { label: "mAP@0.5",    value: "0.979", sub: "on the test set" },
+  { label: "mAP@0.5–95", value: "0.626", sub: "on the test set" },
 ];
 
 export default function Home() {
@@ -51,28 +73,12 @@ export default function Home() {
             `,
           }}
         >
-          {/* Coordinate grid corner decoration */}
-          <div
-            aria-hidden
-            className="absolute top-0 right-0 w-64 h-64 pointer-events-none"
-            style={{
-              backgroundImage: `
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px)
-              `,
-              backgroundSize: "32px 32px",
-              maskImage: "radial-gradient(ellipse at top right, black 0%, transparent 70%)",
-              WebkitMaskImage: "radial-gradient(ellipse at top right, black 0%, transparent 70%)",
-              opacity: 0.6,
-            }}
-          />
-
           <div className="max-w-7xl mx-auto px-6 py-20 grid lg:grid-cols-2 gap-16 items-center">
             {/* Left — text */}
             <div>
               <div className="badge-amber mb-8" style={{ display: "inline-flex" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--amber)", display: "inline-block" }} />
-                SAR · Edge AI · HTU Capstone 2026
+                SAR · Aerial Human Detection
               </div>
 
               <h1
@@ -94,10 +100,11 @@ export default function Home() {
                 <br />Save.
               </h1>
 
-              <p style={{ fontSize: "1.05rem", color: "var(--sand-dim)", lineHeight: 1.7, maxWidth: "44ch", marginBottom: "2.5rem" }}>
-                GoldenEye is a human-detection system for aerial Search &amp; Rescue. A YOLOv8
-                model trained on desert-domain imagery runs fully offline — on a Raspberry Pi 5
-                with Hailo-8L acceleration, no cloud required.
+              <p style={{ fontSize: "1.05rem", color: "var(--sand-dim)", lineHeight: 1.7, maxWidth: "48ch", marginBottom: "2.5rem" }}>
+                GoldenEye is an AI-based aerial human-detection system for desert search and
+                rescue. A YOLOv8n model, fine-tuned on a private desert dataset, identifies
+                humans from drone-view imagery — designed for edge deployment on a Raspberry
+                Pi 5 with AI acceleration.
               </p>
 
               <div className="flex items-center gap-4 flex-wrap">
@@ -126,7 +133,7 @@ export default function Home() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/hero.jpg"
-                alt="Aerial SAR — person detected in desert terrain"
+                alt="Aerial SAR — human detected in desert terrain"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
 
@@ -148,17 +155,17 @@ export default function Home() {
                   className="hero-det-label-appear"
                   style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4, whiteSpace: "nowrap" }}
                 >
-                  <span className="badge-amber">PERSON</span>
+                  <span className="badge-amber">HUMAN</span>
                 </div>
               </div>
 
               {/* HUD bar — appears with detection */}
               <div className="hero-hud-bar hero-det-appear">
                 <span className="font-data" style={{ fontSize: "0.62rem", color: "var(--amber-bright)", letterSpacing: "0.08em" }}>
-                  TARGET ACQUIRED · YOLOv8n · 45 ms
+                  TARGET ACQUIRED · YOLOv8n · 2.7 ms
                 </span>
                 <span className="font-data" style={{ fontSize: "0.6rem", color: "var(--sand-faint)" }}>
-                  best.onnx · CPU
+                  best.onnx
                 </span>
               </div>
             </div>
@@ -168,7 +175,7 @@ export default function Home() {
         {/* ── Three modes ── */}
         <section className="max-w-7xl mx-auto px-6 py-20" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="mb-12">
-            <p className="font-data mb-3" style={{ fontSize: "0.7rem", color: "var(--amber)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <p className="font-data mb-3" style={{ fontSize: "0.7rem", color: "var(--bronze)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
               Detection modes
             </p>
             <h2 className="font-display" style={{ fontSize: "clamp(1.8rem, 3vw, 2.8rem)", fontWeight: 300, color: "var(--sand)", lineHeight: 1.15, fontOpticalSizing: "auto" }}>
@@ -177,67 +184,65 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-5">
-            {modes.map(({ href, glyph, title, desc, tag }) => (
+            {modes.map(({ href, glyphPath, title, desc }) => (
               <Link
                 key={href}
                 href={href}
                 className="mode-card"
               >
-                <div style={{ width: 44, height: 44, borderRadius: 6, background: "var(--amber-glow)", border: "1px solid var(--amber-dim)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", color: "var(--amber)", marginBottom: "1.25rem" }}>
-                  {glyph}
+                <div
+                  style={{
+                    width: 52, height: 36, borderRadius: 4,
+                    background: "var(--surface)",
+                    border: "1px solid var(--amber-dim)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "var(--amber)", marginBottom: "1.25rem",
+                  }}
+                >
+                  <svg width="28" height="26" viewBox="0 0 28 26">{glyphPath}</svg>
                 </div>
                 <h3 className="font-display" style={{ fontSize: "1.3rem", fontWeight: 500, color: "var(--sand)", marginBottom: "0.5rem", fontOpticalSizing: "auto" }}>
                   {title}
                 </h3>
-                <p style={{ fontSize: "0.88rem", color: "var(--sand-dim)", lineHeight: 1.6, marginBottom: "1.25rem" }}>
+                <p style={{ fontSize: "0.88rem", color: "var(--sand-dim)", lineHeight: 1.6 }}>
                   {desc}
                 </p>
-                <span className="badge-amber">{tag}</span>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* ── Dataset table ── */}
+        {/* ── Test results ── */}
         <section className="max-w-7xl mx-auto px-6 py-16" style={{ borderTop: "1px solid var(--border)" }}>
-          <p className="font-data mb-8" style={{ fontSize: "0.7rem", color: "var(--amber)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            Training data provenance
-          </p>
-          <div className="overflow-x-auto">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  {["Dataset", "Images", "Domain"].map((h) => (
-                    <th key={h} className="font-data" style={{ textAlign: "left", padding: "0.6rem 1rem", fontSize: "0.68rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--sand-dim)", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {datasets.map(({ name, count, domain }, i) => (
-                  <tr key={name} style={{ background: i % 2 === 0 ? "transparent" : "var(--surface)" }}>
-                    <td style={{ padding: "0.7rem 1rem", fontSize: "0.875rem", color: "var(--sand)", borderBottom: "1px solid var(--border)" }}>{name}</td>
-                    <td className="font-data" style={{ padding: "0.7rem 1rem", fontSize: "0.8rem", color: "var(--amber)", borderBottom: "1px solid var(--border)" }}>{count}</td>
-                    <td style={{ padding: "0.7rem 1rem", fontSize: "0.8rem", color: "var(--sand-dim)", borderBottom: "1px solid var(--border)" }}>{domain}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mb-8">
+            <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--bronze)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Final test evaluation
+            </p>
+            <h2 className="font-display" style={{ fontSize: "clamp(1.4rem, 2.4vw, 2rem)", fontWeight: 400, color: "var(--sand)", letterSpacing: "0.01em", fontOpticalSizing: "auto" }}>
+              Performance on the unseen desert test set
+            </h2>
+            <p style={{ marginTop: "0.6rem", color: "var(--sand-dim)", fontSize: "0.92rem", lineHeight: 1.65, maxWidth: "62ch" }}>
+              The final YOLOv8n model was evaluated on 1,411 images (688 human instances,
+              763 background images) from the private desert search-and-rescue dataset.
+            </p>
           </div>
-        </section>
 
-        {/* ── Footer ── */}
-        <footer style={{ borderTop: "1px solid var(--border)", padding: "2rem 0" }}>
-          <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <span className="font-data" style={{ fontSize: "0.72rem", color: "var(--sand-faint)", letterSpacing: "0.04em" }}>
-              GoldenEye · HTU Capstone 2026 · Omar Malkawi, Hamza Jad Allah, Suhaib Alajami
-            </span>
-            <span className="font-data" style={{ fontSize: "0.7rem", color: "var(--sand-faint)" }}>
-              Supervised by Dr. Rami Al-Ouran
-            </span>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {testMetrics.map(({ label, value, sub }) => (
+              <div key={label} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "1.25rem" }}>
+                <div className="font-display" style={{ fontSize: "2rem", fontWeight: 700, color: "var(--amber)", lineHeight: 1, fontOpticalSizing: "auto" }}>
+                  {value}
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "var(--sand)", marginTop: "0.3rem" }}>{label}</div>
+                <div className="font-data" style={{ fontSize: "0.62rem", color: "var(--sand-faint)", marginTop: "0.15rem" }}>{sub}</div>
+              </div>
+            ))}
           </div>
-        </footer>
+
+          <p className="font-data" style={{ marginTop: "1rem", fontSize: "0.7rem", color: "var(--sand-faint)", letterSpacing: "0.04em" }}>
+            Inference time 2.7 ms/image on Tesla T4 GPU. Embedded benchmarks on Raspberry Pi 5 are separate.
+          </p>
+        </section>
       </main>
     </>
   );

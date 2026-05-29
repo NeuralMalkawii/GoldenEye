@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Fraunces, Syne, Fira_Code, Noto_Naskh_Arabic } from "next/font/google";
+import { Fraunces, Syne, B612_Mono } from "next/font/google";
 import "./globals.css";
 
+// Fraunces — display.
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
@@ -9,6 +10,7 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+// Syne — UI body.
 const syne = Syne({
   variable: "--font-syne",
   subsets: ["latin"],
@@ -16,24 +18,18 @@ const syne = Syne({
   display: "swap",
 });
 
-const firaCode = Fira_Code({
-  variable: "--font-fira-code",
+// B612 Mono — data / numeric.
+const b612 = B612_Mono({
+  variable: "--font-b612",
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  display: "swap",
-});
-
-const notoNaskhArabic = Noto_Naskh_Arabic({
-  variable: "--font-noto-naskh",
-  subsets: ["arabic"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "GoldenEye — Search & Rescue Detection",
   description:
-    "AI-powered human detection for search and rescue operations. Trained on Shaheen and SARD datasets. Edge-deployable on Raspberry Pi + Hailo-8L.",
+    "AI-based aerial human detection for desert search and rescue. YOLOv8n trained on a private desert dataset; designed for edge deployment on Raspberry Pi 5 with AI acceleration.",
   keywords: ["SAR", "search and rescue", "drone", "human detection", "YOLO", "edge AI"],
 };
 
@@ -46,11 +42,13 @@ export default function RootLayout({
       className={`
         ${fraunces.variable}
         ${syne.variable}
-        ${firaCode.variable}
-        ${notoNaskhArabic.variable}
+        ${b612.variable}
       `}
+      suppressHydrationWarning
     >
-      <body className="min-h-dvh flex flex-col antialiased" suppressHydrationWarning>{children}</body>
+      <body className="min-h-dvh flex flex-col antialiased" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

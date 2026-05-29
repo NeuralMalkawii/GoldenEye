@@ -93,7 +93,7 @@ export default function DetectVideoPage() {
       <Navbar />
       <main className="flex-1 page-enter max-w-7xl mx-auto px-6 py-12">
         <div className="mb-10">
-          <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--amber)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--bronze)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             Detection · Video
           </p>
           <h1 className="font-display" style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300, color: "var(--sand)", fontOpticalSizing: "auto" }}>
@@ -175,7 +175,7 @@ export default function DetectVideoPage() {
           {/* Right */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             <div className="ge-card" style={{ padding: "1.5rem", flex: 1 }}>
-              <p className="font-data mb-6" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              <p className="font-data mb-6" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 Pipeline
               </p>
               {[

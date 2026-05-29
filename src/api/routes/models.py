@@ -83,6 +83,7 @@ async def select_model(body: ModelSelectRequest, request: Request):
                 candidate,
                 confidence_threshold=settings.confidence_threshold,
                 nms_iou_threshold=settings.nms_iou_threshold,
+                confidence_temperature=settings.confidence_temperature,
             ),
         )
         request.app.state.engine = new_engine

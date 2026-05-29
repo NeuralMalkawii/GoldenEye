@@ -114,7 +114,7 @@ class TestDetectImage:
             assert len(det["bbox"]) == 4
             assert "confidence" in det
             assert 0.0 <= det["confidence"] <= 1.0
-            assert det["class_name"] == "person"
+            assert det["class_name"] == "human"
 
     def test_non_image_rejected(self, client):
         r = client.post(
@@ -139,7 +139,6 @@ class TestDetectImage:
             files={"file": ("big.jpg", buf.tobytes(), "image/jpeg")},
         )
         assert r.status_code == 200
-
 
 # ---------------------------------------------------------------------------
 # /api/detect/video  (upload only — Celery worker not running in tests)

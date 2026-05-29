@@ -1,18 +1,21 @@
 import { Navbar } from "@/components/Navbar";
 
 const specs = [
-  ["University",     "AlHussein Technical University"],
-  ["Supervisor",     "Dr. Rami Al-Ouran"],
-  ["Academic year",  "2025 / 2026"],
-  ["Model",          "YOLOv8n (nano)"],
-  ["Format",         "ONNX opset 20"],
-  ["Input",          "640 × 640 px, RGB"],
-  ["Output",         "Single class — person"],
-  ["Precision",      "0.975"],
-  ["Recall",         "0.985"],
-  ["mAP@0.5",        "0.979"],
-  ["CPU latency",    "~42 ms / frame"],
-  ["License",        "Academic use only"],
+  ["University",        "AlHussein Technical University"],
+  ["Supervisor",        "Dr. Rami Al-Ouran"],
+  ["Academic year",     "Spring 2025 / 2026"],
+  ["Model",             "YOLOv8n"],
+  ["Parameters",        "3,005,843"],
+  ["GFLOPs",            "8.1"],
+  ["Layers",            "73"],
+  ["Input size",        "640 × 640 px"],
+  ["Class",             "Single class — human"],
+  ["Test precision",    "0.975"],
+  ["Test recall",       "0.985"],
+  ["Test F1",           "0.980"],
+  ["Test mAP@0.5",      "0.979"],
+  ["Test mAP@0.5–95",   "0.626"],
+  ["Inference time",    "2.7 ms / image (Tesla T4 GPU)"],
 ];
 
 type Section = {
@@ -30,67 +33,56 @@ const sections: Section[] = [
     body: (
       <>
         <p>
-          GoldenEye is a senior capstone project at AlHussein Technical University,
-          supervised by Dr. Rami Al-Ouran. The mission is to design, train, and deploy
-          a production-grade, edge-capable human-detection system optimised for aerial
-          Search &amp; Rescue (SAR) operations in desert environments — principally the
-          UAE Empty Quarter and Jordan's Wadi Rum.
+          GoldenEye is an AI-based, aerial drone-view human-detection system aimed at
+          assisting search-and-rescue operations in desert environments. It is designed
+          for top-down and high-oblique perspectives — the kind of view a UAV camera
+          produces — and helps rescue teams visualise vast open desert areas more
+          quickly than ground search alone.
         </p>
         <p>
-          The system takes a live video feed from a UAV camera, runs an on-device YOLO
-          inference pipeline to locate people in the frame, and streams annotated results
-          to a web-based command interface in real time. The full stack — from model
-          training to cloud API to edge hardware — is designed to work in environments
-          with intermittent connectivity, extreme heat, and low contrast between
-          subjects and terrain.
+          The system uses a YOLOv8n object-detection model that takes an image or video
+          frame and produces a bounding box and confidence score for each detected
+          person. It does not replace rescue teams or decision-making; it acts as an
+          intelligent support tool that automatically highlights possible human targets
+          from aerial imagery.
         </p>
         <p>
-          The primary scientific question GoldenEye answers is: <em>how well does a model
-          trained on UAE imagery generalise to Jordan's visually different desert?</em> The
-          cross-environment evaluation, altitude robustness study, and degradation analysis
-          constitute the novel contributions beyond the Shaheen baseline.
+          The project was developed as a senior capstone at AlHussein Technical
+          University under the supervision of Dr. Rami Al-Ouran. The implementation
+          builds on a problem identified in Capstone 1: ground search-and-rescue in
+          desert and remote areas is slow, expensive, and difficult due to terrain,
+          visibility, area size, and weak communications.
         </p>
       </>
     ),
   },
   {
-    id: "datasets",
-    label: "02 — Datasets",
+    id: "dataset",
+    label: "02 — Dataset",
     title: "Training data",
     body: (
       <>
         <p>
-          Two datasets are used, combined into a single unified corpus for training.
+          The final model was fine-tuned on a <strong>private desert search-and-rescue
+          dataset</strong> obtained from the Shaheen project. The dataset is designed
+          for Middle Eastern desert environments and contains aerial images with
+          desert backgrounds, varied human appearances and clothing colours, and
+          different poses and movement conditions.
         </p>
-
-        <h3>SARD — Search and Rescue Dataset</h3>
         <p>
-          A publicly available academic dataset of aerial imagery collected specifically for
-          SAR research. Images were captured at varying altitudes, lighting conditions, and
-          terrain types. The dataset provides a wide distribution of human poses, clothing
-          colours, and occlusion scenarios, making it well-suited as a general-purpose
-          pre-training base.
+          The data is organised in YOLO format — each image has an associated label
+          file containing bounding-box annotations for the <em>human</em> class — and
+          is split into training, validation, and testing subsets. The validation
+          set is used to select the best model weights; the test set is used for the
+          final performance evaluation. The presence of background images (no
+          humans) is important because it tests whether the model produces false
+          detections when no person is present.
         </p>
-
-        <h3>Shaheen — AUS Real-World Dataset</h3>
         <p>
-          Contributed by the Shaheen team at the American University of Sharjah, this dataset
-          contains high-resolution aerial images captured over the UAE Empty Quarter using a
-          DJI Mavic 3 at altitudes from 20 m to 95 m. Ground-truth annotations are in YOLO
-          format (normalised bounding boxes, single class: <em>person</em>). The images are
-          4K (3840 × 2160) with rich detail in dune textures, making person-sand separation
-          a genuine challenge. Shaheen's held-out test split is the primary benchmark used
-          for all GoldenEye evaluations.
-        </p>
-
-        <h3>Data pipeline</h3>
-        <p>
-          Both datasets are merged and then split 80 / 10 / 10 into train / validation /
-          test sets, stratified to ensure altitude distribution is preserved across splits.
-          Augmentation applied during training includes random horizontal flip, mosaic
-          composition, colour jitter (hue ±0.015, saturation ±0.7, value ±0.4), random
-          scale (±50 %), and copy-paste. No augmentations are applied at validation or test
-          time.
+          Data augmentation applied during training includes colour, scale, and
+          translation changes, horizontal flipping, mosaic augmentation, and mixup.
+          These help the model generalise to different desert lighting conditions,
+          human positions, and visual variations.
         </p>
       </>
     ),
@@ -98,111 +90,145 @@ const sections: Section[] = [
   {
     id: "model",
     label: "03 — Model",
-    title: "YOLOv8n architecture",
+    title: "YOLOv8n",
     body: (
       <>
         <p>
-          The detection model is YOLOv8n (nano) — the smallest member of Ultralytics'
-          YOLOv8 family. It was selected deliberately over larger variants because the
-          target deployment is a Raspberry Pi 5 + Hailo-8L AI accelerator, where model
-          size and parameter count dominate latency more than FLOP count.
+          The detection model is YOLOv8n — the smallest YOLOv8 variant. It was chosen
+          after baseline experiments compared multiple YOLO sizes on a public
+          search-and-rescue dataset. YOLOv8n was selected because it provides a
+          strong balance between accuracy, inference speed, model size, and
+          suitability for edge deployment. Larger YOLO models can deliver slightly
+          better accuracy but are usually too computationally expensive for embedded
+          targets.
         </p>
 
-        <h3>Architecture summary</h3>
+        <h3>Training configuration</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <tbody>
+              {[
+                ["Epochs",                "100"],
+                ["Image size",            "640"],
+                ["Batch size",            "16"],
+                ["Optimizer",             "AdamW"],
+                ["Initial learning rate", "0.001"],
+                ["Weight decay",          "0.0005"],
+                ["Patience (early stop)", "20"],
+                ["Framework",             "Ultralytics YOLO"],
+                ["Training environment",  "Kaggle GPU (Tesla T4)"],
+              ].map(([k, v]) => (
+                <tr key={k}>
+                  <td><strong>{k}</strong></td>
+                  <td>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    ),
+  },
+  {
+    id: "evaluation",
+    label: "04 — Evaluation",
+    title: "Validation and test results",
+    body: (
+      <>
         <p>
-          YOLOv8n uses a CSPDarknet backbone with C2f bottleneck modules, a PANet feature
-          pyramid neck, and a decoupled detection head that separates classification and
-          regression branches. The nano variant has ~3.2 M parameters and ~8.7 GFLOPs at
-          640 × 640 input. The decoupled head removes the objectness branch present in
-          YOLOv5, simplifying training and improving small-object recall — critical for
-          people viewed from 50–95 m altitude.
+          The best model was selected based on validation performance, then evaluated
+          on the unseen test set. The difference between validation and test
+          performance is small, which indicates that the model generalised well and
+          did not show severe overfitting.
         </p>
 
-        <h3>Training procedure</h3>
-        <p>
-          Training starts from official ImageNet-pretrained weights. Phase 1 fine-tunes
-          on SARD (100 epochs, cosine LR schedule, initial LR 0.01, final LR 0.001,
-          SGD + momentum 0.937). Phase 2 fine-tunes the Phase 1 checkpoint on the
-          combined SARD + Shaheen corpus for a further 150 epochs using the same schedule
-          with a warm-up of 3 epochs. Both phases use a confidence threshold of 0.001
-          and IoU threshold 0.7 for NMS during evaluation.
-        </p>
+        <h3>Validation set (706 images, 343 human instances)</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <tbody>
+              {[
+                ["Precision",   "0.988"],
+                ["Recall",      "0.990"],
+                ["mAP@0.5",     "0.994"],
+                ["mAP@0.5–95",  "0.650"],
+                ["Inference",   "3.0 ms / image"],
+              ].map(([k, v]) => (
+                <tr key={k}><td><strong>{k}</strong></td><td>{v}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        <h3>Export and quantisation</h3>
+        <h3>Test set (1,411 images, 688 human instances, 763 background images)</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <tbody>
+              {[
+                ["Precision",         "0.975"],
+                ["Recall",            "0.985"],
+                ["F1 score",          "0.980"],
+                ["mAP@0.5",           "0.979"],
+                ["mAP@0.5–95",        "0.626"],
+                ["Preprocessing",     "0.6 ms / image"],
+                ["Inference",         "2.7 ms / image"],
+                ["Postprocessing",    "0.5 ms / image"],
+                ["Total",             "3.8 ms / image"],
+              ].map(([k, v]) => (
+                <tr key={k}><td><strong>{k}</strong></td><td>{v}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
         <p>
-          The best validation checkpoint (<code>best.pt</code>) is exported to ONNX opset 20
-          with dynamic batch dimension. The exported model processes a single 640 × 640
-          frame in ~42 ms on a stock laptop CPU (no GPU). For the Hailo-8L edge deployment
-          the model is re-exported at opset 12 (maximum Hailo Dataflow Compiler support)
-          and compiled to a <code>.hef</code> binary with INT8 post-training quantisation —
-          accuracy drop versus FP32 ONNX is measured and documented in the evaluation.
+          The high recall is particularly important for a search-and-rescue
+          application — missing a person is more critical than producing an
+          occasional false alarm. The lower mAP@0.5–95 reflects the difficulty of
+          tight bounding-box localisation on small aerial targets, where a few pixels
+          of shift cause a large IoU drop. Note that the 2.7 ms inference time
+          represents GPU-side evaluation on a Tesla T4 and is not a Raspberry Pi
+          number — embedded benchmarking is reported separately.
         </p>
       </>
     ),
   },
   {
     id: "inference",
-    label: "04 — Inference",
-    title: "Inference pipeline",
+    label: "05 — Inference",
+    title: "Inference workflow",
     body: (
       <>
         <p>
-          The inference engine (<code>src/api/inference/onnx_engine.py</code>) wraps
-          ONNX Runtime and performs the following steps on every frame:
+          The inference application uses the trained YOLOv8n model to process input
+          frames and display detection results. Each frame passes through the
+          following pipeline:
         </p>
-
         <ol>
-          <li>
-            <strong>Letterbox resize</strong> — the input image is resized to fit within
-            640 × 640 while preserving aspect ratio; unused area is padded with grey
-            (114, 114, 114). This avoids distortion of human proportions.
-          </li>
-          <li>
-            <strong>Normalisation</strong> — pixel values are divided by 255 to map
-            [0, 255] → [0, 1]. The tensor is transposed from HWC to NCHW and cast to
-            float32.
-          </li>
-          <li>
-            <strong>ONNX session run</strong> — the pre-loaded <code>InferenceSession</code>
-            (loaded once at API startup, kept in memory) returns output shape [1, 5, 8400]:
-            four box coordinates (cx, cy, w, h) plus one confidence score for each of the
-            8400 anchors.
-          </li>
-          <li>
-            <strong>Filtering</strong> — rows with confidence below the threshold
-            (default 0.25) are discarded. The threshold is configurable per-request.
-          </li>
-          <li>
-            <strong>NMS</strong> — Non-Maximum Suppression (<code>cv2.dnn.NMSBoxes</code>)
-            with IoU threshold 0.45 removes duplicate detections of the same person.
-          </li>
-          <li>
-            <strong>Rescaling</strong> — bounding boxes are mapped back from 640 × 640
-            space to the original image dimensions, accounting for the letterbox padding
-            offset and scale factor.
-          </li>
-          <li>
-            <strong>Response</strong> — detections are returned as a list of
-            <code>{"{ bbox: [x1,y1,x2,y2], confidence, class_name }"}</code> objects plus
-            per-request timing metadata (preprocessing, inference, postprocessing in ms).
-          </li>
+          <li>Receive an image or video frame from the user interface.</li>
+          <li>Preprocess: resize and normalise to the 640 × 640 input expected by YOLOv8n.</li>
+          <li>Run YOLOv8n inference via ONNX Runtime.</li>
+          <li>Apply confidence filtering and non-maximum suppression to remove weak or duplicate boxes.</li>
+          <li>Draw the bounding boxes around detected humans.</li>
+          <li>Display the confidence score for each detection.</li>
         </ol>
+        <p>
+          The same pipeline is used by all three input modes — image upload, video
+          upload, and the live WebSocket stream (camera or screen share).
+        </p>
       </>
     ),
   },
   {
     id: "api",
-    label: "05 — API",
+    label: "06 — API",
     title: "Backend service",
     body: (
       <>
         <p>
-          The backend is a FastAPI application served by Uvicorn with Gunicorn workers.
-          It exposes REST endpoints for single-image and batch-video detection, a WebSocket
-          endpoint for real-time streaming, and a Prometheus metrics scrape target.
+          The backend is a FastAPI application that exposes the trained model through
+          a small set of endpoints. The ONNX model is loaded once at startup and kept
+          in memory.
         </p>
-
-        <h3>Endpoints</h3>
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
@@ -214,16 +240,13 @@ const sections: Section[] = [
             </thead>
             <tbody>
               {[
-                ["POST",  "/api/detect/image",           "Upload an image → JSON detections + annotated base64 image"],
-                ["POST",  "/api/detect/video",           "Upload a video → job_id; Celery processes async"],
-                ["GET",   "/api/jobs/{job_id}",          "Poll job status + progress percentage"],
-                ["GET",   "/api/jobs/{job_id}/result.mp4",  "Download annotated output video"],
-                ["GET",   "/api/jobs/{job_id}/result.csv",  "Download per-frame detection CSV"],
-                ["WS",    "/ws/live",                    "Stream raw JPEG frames → receive JSON detections"],
-                ["GET",   "/api/models",                 "List loaded model files with metadata"],
-                ["POST",  "/api/models/select",          "Switch the active inference model"],
-                ["GET",   "/api/health",                 "Liveness + readiness check"],
-                ["GET",   "/api/metrics",                "Prometheus text-format metrics"],
+                ["POST",  "/api/detect/image",            "Upload an image → JSON detections + annotated image"],
+                ["POST",  "/api/detect/video",            "Upload a video → job_id; processed asynchronously"],
+                ["GET",   "/api/jobs/{job_id}",           "Poll job status and progress"],
+                ["GET",   "/api/jobs/{job_id}/result.mp4", "Download the annotated output video"],
+                ["GET",   "/api/jobs/{job_id}/result.csv", "Download the per-frame detection CSV"],
+                ["WS",    "/ws/live",                    "Stream camera or screen-share frames → JSON detections"],
+                ["GET",   "/api/health",                  "Liveness + readiness check"],
               ].map(([m, p, d]) => (
                 <tr key={p}>
                   <td><code>{m}</code></td>
@@ -234,162 +257,61 @@ const sections: Section[] = [
             </tbody>
           </table>
         </div>
-
-        <h3>Rate limiting &amp; backpressure</h3>
-        <p>
-          The image endpoint is rate-limited to 60 requests/minute per IP using SlowAPI.
-          The WebSocket endpoint queues incoming frames and drops the oldest frame if
-          the inference queue depth exceeds 4, preventing memory accumulation during slow
-          network conditions. Celery + Redis handles video jobs asynchronously so that
-          long-running encodes do not block the API workers.
-        </p>
-      </>
-    ),
-  },
-  {
-    id: "simulation",
-    label: "06 — Simulation",
-    title: "UAV flight simulation",
-    body: (
-      <>
-        <p>
-          Because a physical UAV is not always available for testing, GoldenEye includes
-          a Python-based software simulation (<code>simulation/fly_simulation.py</code>)
-          that replicates a drone flyover using real Shaheen 4K imagery.
-        </p>
-
-        <h3>How it works</h3>
-        <p>
-          The simulator loads a 4K source image and computes a crop window whose size is
-          determined by the simulated altitude. Lower altitudes produce a smaller crop
-          (more zoom), higher altitudes produce a larger crop (wider FOV). The mapping is:
-        </p>
-        <div style={{ overflowX: "auto" }}>
-          <table>
-            <thead><tr><th>Altitude (m)</th><th>Crop fraction</th><th>Effective zoom</th></tr></thead>
-            <tbody>
-              {[
-                ["20 m", "22 %", "Very close — person fills ~12 % of frame height"],
-                ["30 m", "30 %", "Close — person clearly visible"],
-                ["50 m", "46 %", "Medium — default operational altitude"],
-                ["70 m", "63 %", "High — person is small, ~8 px tall"],
-                ["95 m", "82 %", "Maximum — near-full-image view, person ~5 px tall"],
-              ].map(([a, f, z]) => (
-                <tr key={a}><td>{a}</td><td>{f}</td><td>{z}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p>
-          The crop window moves along a generated flight path (lawnmower or Archimedean
-          spiral), and each position is encoded as a JPEG and streamed over WebSocket to
-          the live detection API. Returned detections are overlaid onto the frame with
-          amber tactical corner brackets, a confidence score, and a HUD bar showing
-          altitude, frame number, FPS, and detection count.
-        </p>
-
-        <h3>Altitude robustness evaluation</h3>
-        <p>
-          A companion script (<code>simulation/evaluate_sim.py</code>) runs the same
-          centre-crop logic over the test set at all 8 altitudes, compares predictions
-          against YOLO-format ground-truth labels using IoU-based greedy matching
-          (threshold 0.5), and produces per-altitude Precision / Recall / F1 curves.
-          This generates the altitude robustness figure used in the capstone report.
-        </p>
       </>
     ),
   },
   {
     id: "deployment",
     label: "07 — Deployment",
-    title: "System architecture",
+    title: "Target hardware",
     body: (
       <>
         <p>
-          GoldenEye is deployed as three independent services:
+          The project goal is to run human detection close to the drone camera
+          without depending entirely on cloud processing. YOLOv8n was selected for
+          its small footprint (~3 million parameters) which makes it well-suited
+          to embedded deployment.
         </p>
-
-        <h3>Frontend — Vercel</h3>
         <p>
-          The Next.js 14 App Router application is deployed to Vercel on every push to
-          <code>main</code>. All pages are statically pre-rendered where possible; client
-          components hydrate in the browser. Vercel's edge network serves the static
-          assets globally at low latency.
+          The target deployment hardware is a <strong>Raspberry Pi 5 with AI
+          acceleration</strong>. The Pi acts as the main controller responsible for
+          frame handling and application execution; the AI accelerator is the target
+          for optimised inference. The detection output — human label, confidence
+          score, and bounding box — supports rescue operators through visual alerts
+          and screenshots, with optional GPS logging considered as future work.
         </p>
-
-        <h3>Backend API — Railway / Fly.io</h3>
         <p>
-          The FastAPI application and Celery worker run inside Docker containers defined
-          in <code>docker-compose.yml</code>. The API image is based on
-          <code>python:3.11-slim</code> with ONNX Runtime CPU, OpenCV headless, and
-          FFmpeg. The ONNX model path is configured via the <code>MODEL_PATH</code>
-          environment variable (default <code>models/best.onnx</code>), loaded once at
-          startup and kept in memory for the lifetime of the process.
-        </p>
-
-        <h3>Redis</h3>
-        <p>
-          A Redis 7 instance acts as the Celery broker and result backend. Job status,
-          progress percentages, and detection CSVs for completed video jobs are stored
-          in Redis with a 24-hour TTL.
-        </p>
-
-        <h3>Edge — Raspberry Pi 5 + Hailo-8L</h3>
-        <p>
-          For field deployment, the <code>.hef</code> model binary runs on the Hailo-8L
-          AI accelerator attached to a Raspberry Pi 5 via the M.2 HAT+. A GStreamer
-          pipeline captures frames from the UAV camera interface, passes them to the
-          Hailo runtime, overlays detections, and optionally streams to the web frontend.
-          The edge node operates fully offline with no cloud dependency.
+          The quantitative model evaluation reported here was performed on a Kaggle
+          Tesla T4 GPU. Embedded performance numbers (FPS, latency, CPU/memory use,
+          temperature, stability) on the Raspberry Pi require separate benchmarking
+          and should not be inferred from the GPU results.
         </p>
       </>
     ),
   },
   {
-    id: "contributions",
-    label: "08 — Contributions",
-    title: "Scientific contributions",
+    id: "future",
+    label: "08 — Future work",
+    title: "Limitations and improvements",
     body: (
       <>
         <p>
-          GoldenEye extends the Shaheen baseline with three novel experimental dimensions:
+          The project achieved strong results but several limitations remain. The
+          main technical weakness is bounding-box localisation accuracy — the
+          mAP@0.5–95 score of 0.626 shows that the model detects humans reliably
+          but does not always produce highly precise box alignment under stricter
+          IoU thresholds. This is expected in aerial human detection where targets
+          are small.
         </p>
-
-        <h3>1. Cross-environment generalisation</h3>
-        <p>
-          Shaheen's dataset covers only UAE golden sand dunes. GoldenEye evaluates the same
-          model on imagery from Jordan's Wadi Rum — a visually distinct environment
-          characterised by red sandstone, darker shadow areas, and different vegetation.
-          This cross-domain experiment quantifies how much accuracy the model loses when
-          deployed in a new desert terrain, and whether fine-tuning on even a small Wadi
-          Rum sample recovers it.
-        </p>
-
-        <h3>2. Altitude robustness curve</h3>
-        <p>
-          Precision, Recall, and F1 are reported at eight discrete altitudes (20–95 m).
-          The resulting curve answers: <em>at what altitude does detection performance
-          fall below an operationally acceptable threshold?</em> This directly informs UAV
-          mission planning for SAR teams — they can read off the maximum safe search
-          altitude for a given recall target.
-        </p>
-
-        <h3>3. Sensor degradation robustness</h3>
-        <p>
-          Real UAV imagery is often affected by motion blur, JPEG compression artefacts,
-          haze, and sensor noise. GoldenEye synthetically applies these degradations at
-          parameterised severity levels to the test set and evaluates model performance
-          under each, producing a degradation tolerance profile.
-        </p>
-
-        <h3>Relationship to Shaheen</h3>
-        <p>
-          Shaheen (AUS) solved the core detection problem for UAE Empty Quarter at low
-          altitude with high accuracy. GoldenEye takes that solved baseline and asks the
-          harder operational questions: <em>does it still work in a different country, from
-          a higher altitude, through a degraded sensor?</em> The Shaheen model and dataset
-          are used with explicit permission; their contribution is fully credited.
-        </p>
+        <p>Recommended future improvements:</p>
+        <ul>
+          <li>Train and evaluate with larger input image sizes (e.g. 960 or 1280) to improve small-object detection.</li>
+          <li>Add more real-world data from different Middle Eastern desert regions, altitudes, camera angles, and lighting conditions.</li>
+          <li>Run a separate embedded benchmark on Raspberry Pi 5 measuring FPS, latency, CPU/memory usage, and temperature during continuous operation.</li>
+          <li>Add GPS coordinate logging so that each detection records a frame, timestamp, confidence, and location.</li>
+          <li>Improve interface error handling for invalid input sources, missing camera permissions, and long-duration operation.</li>
+          <li>Conduct controlled field testing with real drone footage in operational SAR conditions.</li>
+        </ul>
       </>
     ),
   },
@@ -399,155 +321,131 @@ export default function AboutPage() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 page-enter max-w-7xl mx-auto px-6 py-12">
+      <main className="flex-1 page-enter">
+        <div className="max-w-7xl mx-auto px-6 py-12">
 
-        {/* Header */}
-        <div className="mb-14">
-          <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--amber)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            About GoldenEye
-          </p>
-          <h1 className="font-display" style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300, color: "var(--sand)", fontOpticalSizing: "auto" }}>
-            Edge-first SAR detection
-          </h1>
-          <p style={{ marginTop: "0.75rem", color: "var(--sand-dim)", fontSize: "1rem", maxWidth: "60ch", lineHeight: 1.7 }}>
-            A complete technical reference for the GoldenEye system — model, data,
-            inference pipeline, API, simulation, and deployment.
-          </p>
-        </div>
+          {/* Header */}
+          <div className="mb-10">
+            <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--bronze)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              About GoldenEye
+            </p>
+            <h1 className="font-display" style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300, color: "var(--sand)", fontOpticalSizing: "auto" }}>
+              Aerial human detection for desert SAR
+            </h1>
+            <p style={{ marginTop: "0.75rem", color: "var(--sand-dim)", fontSize: "1rem", maxWidth: "60ch", lineHeight: 1.7 }}>
+              A technical reference for the GoldenEye system — the problem, the
+              dataset, the model, the inference workflow, and the evaluation results.
+            </p>
+          </div>
 
-        <div className="grid lg:grid-cols-4 gap-10">
+          <div className="grid lg:grid-cols-4 gap-10">
 
-          {/* Sticky TOC (desktop) */}
-          <aside className="hidden lg:block">
-            <div className="ge-card" style={{ padding: "1.25rem", position: "sticky", top: "5rem" }}>
-              <p className="font-data mb-4" style={{ fontSize: "0.62rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                Contents
-              </p>
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                {sections.map((s) => (
-                  <li key={s.id}>
-                    <a
-                      href={`#${s.id}`}
-                      className="font-data"
-                      style={{ fontSize: "0.72rem", color: "var(--sand-dim)", textDecoration: "none", letterSpacing: "0.03em", display: "block", padding: "0.2rem 0" }}
-                    >
-                      {s.label}
+            {/* Sticky TOC (desktop) */}
+            <aside className="hidden lg:block">
+              <div className="ge-card" style={{ padding: "1.25rem", position: "sticky", top: "5rem" }}>
+                <p className="font-data mb-4" style={{ fontSize: "0.62rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  Contents
+                </p>
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  {sections.map((s) => (
+                    <li key={s.id}>
+                      <a
+                        href={`#${s.id}`}
+                        className="font-data"
+                        style={{ fontSize: "0.72rem", color: "var(--sand-dim)", textDecoration: "none", letterSpacing: "0.03em", display: "block", padding: "0.2rem 0" }}
+                      >
+                        {s.label}
+                      </a>
+                    </li>
+                  ))}
+                  <li>
+                    <a href="#specs" className="font-data" style={{ fontSize: "0.72rem", color: "var(--sand-dim)", textDecoration: "none", letterSpacing: "0.03em", display: "block", padding: "0.2rem 0" }}>
+                      09 — Specs
                     </a>
                   </li>
+                  <li>
+                    <a href="#team" className="font-data" style={{ fontSize: "0.72rem", color: "var(--sand-dim)", textDecoration: "none", letterSpacing: "0.03em", display: "block", padding: "0.2rem 0" }}>
+                      10 — Team
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </aside>
+
+            {/* Main content */}
+            <div className="lg:col-span-3">
+              <div className="about-body" style={{ display: "flex", flexDirection: "column", gap: "3.5rem" }}>
+
+                {sections.map((s) => (
+                  <section key={s.id} id={s.id} style={{ borderTop: "1px solid var(--border)", paddingTop: "2rem" }}>
+                    <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      {s.label}
+                    </p>
+                    <h2 className="font-display" style={{ fontSize: "1.45rem", fontWeight: 400, color: "var(--sand)", marginBottom: "1.25rem" }}>
+                      {s.title}
+                    </h2>
+                    <div className="prose-about">
+                      {s.body}
+                    </div>
+                  </section>
                 ))}
-                <li>
-                  <a href="#specs" className="font-data" style={{ fontSize: "0.72rem", color: "var(--sand-dim)", textDecoration: "none", letterSpacing: "0.03em", display: "block", padding: "0.2rem 0" }}>
+
+                {/* Specs table */}
+                <section id="specs" style={{ borderTop: "1px solid var(--border)", paddingTop: "2rem" }}>
+                  <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                     09 — Specs
-                  </a>
-                </li>
-                <li>
-                  <a href="#acknowledgements" className="font-data" style={{ fontSize: "0.72rem", color: "var(--sand-dim)", textDecoration: "none", letterSpacing: "0.03em", display: "block", padding: "0.2rem 0" }}>
-                    10 — Acknowledgements
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </aside>
-
-          {/* Main content */}
-          <div className="lg:col-span-3">
-            <div className="about-body" style={{ display: "flex", flexDirection: "column", gap: "3.5rem" }}>
-
-              {sections.map((s) => (
-                <section key={s.id} id={s.id} style={{ borderTop: "1px solid var(--border)", paddingTop: "2rem" }}>
-                  <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                    {s.label}
                   </p>
                   <h2 className="font-display" style={{ fontSize: "1.45rem", fontWeight: 400, color: "var(--sand)", marginBottom: "1.25rem" }}>
-                    {s.title}
+                    Quick reference
                   </h2>
-                  <div className="prose-about">
-                    {s.body}
+                  <div className="ge-card" style={{ padding: "0.25rem 0" }}>
+                    {specs.map(([k, v]) => (
+                      <div
+                        key={k}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "baseline",
+                          padding: "0.6rem 1.25rem",
+                          borderBottom: "1px solid var(--border)",
+                          fontSize: "0.86rem",
+                          gap: "1rem",
+                        }}
+                      >
+                        <span style={{ color: "var(--sand-dim)", flexShrink: 0 }}>{k}</span>
+                        <span style={{ color: "var(--sand)", textAlign: "right" }}>{v}</span>
+                      </div>
+                    ))}
                   </div>
                 </section>
-              ))}
 
-              {/* Specs table */}
-              <section id="specs" style={{ borderTop: "1px solid var(--border)", paddingTop: "2rem" }}>
-                <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                  09 — Specs
-                </p>
-                <h2 className="font-display" style={{ fontSize: "1.45rem", fontWeight: 400, color: "var(--sand)", marginBottom: "1.25rem" }}>
-                  Quick reference
-                </h2>
-                <div className="ge-card" style={{ padding: "0.25rem 0" }}>
-                  {specs.map(([k, v]) => (
-                    <div
-                      key={k}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "baseline",
-                        padding: "0.6rem 1.25rem",
-                        borderBottom: "1px solid var(--border)",
-                        fontSize: "0.86rem",
-                        gap: "1rem",
-                      }}
-                    >
-                      <span style={{ color: "var(--sand-dim)", flexShrink: 0 }}>{k}</span>
-                      <span style={{ color: "var(--sand)", textAlign: "right" }}>{v}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
+                {/* Team */}
+                <section id="team" style={{ borderTop: "1px solid var(--border)", paddingTop: "2rem" }}>
+                  <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                    10 — Team
+                  </p>
+                  <h2 className="font-display" style={{ fontSize: "1.45rem", fontWeight: 400, color: "var(--sand)", marginBottom: "1.25rem" }}>
+                    Authors and supervision
+                  </h2>
+                  <div className="ge-card" style={{ padding: "1.25rem 1.5rem" }}>
+                    <p style={{ fontSize: "0.9rem", color: "var(--sand)", lineHeight: 1.75, marginBottom: "0.75rem" }}>
+                      <strong>Authors:</strong> Hamza Jad Allah, Suhaib Alajami, Omar Malkawi.
+                    </p>
+                    <p style={{ fontSize: "0.9rem", color: "var(--sand-dim)", lineHeight: 1.75, marginBottom: "0.75rem" }}>
+                      <strong>Supervisor:</strong> Dr. Rami Al-Ouran, AlHussein Technical University.
+                    </p>
+                    <p style={{ fontSize: "0.86rem", color: "var(--sand-dim)", lineHeight: 1.7 }}>
+                      The private desert dataset used for fine-tuning was obtained from the
+                      Shaheen project. Their contribution is gratefully acknowledged.
+                    </p>
+                  </div>
+                </section>
 
-              {/* Acknowledgements */}
-              <section id="acknowledgements" style={{ borderTop: "1px solid var(--border)", paddingTop: "2rem" }}>
-                <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                  10 — Acknowledgements
-                </p>
-                <h2 className="font-display" style={{ fontSize: "1.45rem", fontWeight: 400, color: "var(--sand)", marginBottom: "1.25rem" }}>
-                  Credits
-                </h2>
-
-                <div
-                  style={{
-                    background: "var(--surface)",
-                    border: "1px solid var(--amber-dim)",
-                    borderLeft: "3px solid var(--amber)",
-                    borderRadius: "0 6px 6px 0",
-                    padding: "1.25rem 1.5rem",
-                    marginBottom: "1.5rem",
-                  }}
-                >
-                  <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    Shaheen Project — American University of Sharjah
-                  </p>
-                  <p style={{ fontSize: "0.9rem", color: "var(--sand-dim)", lineHeight: 1.75, marginBottom: "0.75rem" }}>
-                    The Shaheen dataset, pre-trained model weights (<code>best.pt</code>), and
-                    the original fine-tuning methodology are the intellectual property of the
-                    Shaheen team at AUS. GoldenEye builds on top of their work with their
-                    explicit permission.
-                  </p>
-                  <p style={{ fontSize: "0.86rem", color: "var(--sand-dim)", lineHeight: 1.7 }}>
-                    <strong style={{ color: "var(--sand)" }}>Shaheen team:</strong>{" "}
-                    Yousef Irshaid, Malik Hader, Adham Elmosalamy, Ahmad Alsaleh, and
-                    Dr. Mohamed Alhajri.
-                  </p>
-                </div>
-
-                <div className="ge-card" style={{ padding: "1.25rem 1.5rem" }}>
-                  <p className="font-data mb-2" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    SARD Dataset
-                  </p>
-                  <p style={{ fontSize: "0.9rem", color: "var(--sand-dim)", lineHeight: 1.75 }}>
-                    The Search and Rescue Dataset is used under its academic licence for
-                    non-commercial research. Full citation and dataset card are included in
-                    the project's <code>docs/</code> directory.
-                  </p>
-                </div>
-              </section>
-
+              </div>
             </div>
           </div>
         </div>
       </main>
-
     </>
   );
 }

@@ -7,8 +7,7 @@ const links = [
   { href: "/detect/image", label: "Image" },
   { href: "/detect/video", label: "Video" },
   { href: "/live",         label: "Live" },
-  { href: "/analytics",   label: "Analytics" },
-  { href: "/about",       label: "About" },
+  { href: "/about",        label: "About" },
 ];
 
 export function Navbar() {
@@ -29,7 +28,7 @@ export function Navbar() {
           className="flex items-center gap-2.5 group"
           style={{ textDecoration: "none" }}
         >
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
             <ellipse cx="11" cy="11" rx="10" ry="7" stroke="var(--amber)" strokeWidth="1.5" />
             <ellipse cx="11" cy="11" rx="4" ry="4" fill="var(--amber)" opacity="0.9" />
             <line x1="1" y1="11" x2="5" y2="11" stroke="var(--amber)" strokeWidth="1.5" />
@@ -44,7 +43,7 @@ export function Navbar() {
         </Link>
 
         {/* Nav links */}
-        <ul className="flex items-center gap-1 list-none m-0 p-0">
+        <ul className="flex items-center gap-0.5 list-none m-0 p-0">
           {links.map(({ href, label }) => {
             const active = path === href || path.startsWith(href + "/");
             return (
@@ -53,9 +52,9 @@ export function Navbar() {
                   href={href}
                   style={{
                     display: "block",
-                    padding: "0.3rem 0.75rem",
+                    padding: "0.3rem 0.7rem",
                     borderRadius: "4px",
-                    fontSize: "0.78rem",
+                    fontSize: "0.76rem",
                     fontWeight: 600,
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",

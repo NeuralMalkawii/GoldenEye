@@ -1,4 +1,4 @@
-"""ONNX Runtime inference engine for YOLOv8 single-class person detection."""
+"""ONNX Runtime inference engine for YOLOv8 single-class human detection."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ class Detection:
     x2: float
     y2: float
     confidence: float
-    class_name: str = "person"
+    class_name: str = "human"
 
     def to_dict(self) -> dict:
         return {
@@ -57,10 +57,12 @@ class ONNXEngine:
         model_path: str | Path,
         confidence_threshold: float = 0.25,
         nms_iou_threshold: float = 0.45,
+        confidence_temperature: float = 1.0,
     ) -> None:
         self.model_path = Path(model_path)
         self.confidence_threshold = confidence_threshold
         self.nms_iou_threshold = nms_iou_threshold
+        self.confidence_temperature = float(confidence_temperature)
 
         providers = (
             ["CUDAExecutionProvider", "CPUExecutionProvider"]
@@ -108,7 +110,7 @@ class ONNXEngine:
         for det in detections:
             x1, y1, x2, y2 = int(det.x1), int(det.y1), int(det.x2), int(det.y2)
             cv2.rectangle(out, (x1, y1), (x2, y2), (0, 200, 80), 2)
-            label = f"person {det.confidence:.2f}"
+            label = f"human {det.confidence:.2f}"
             (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
             cv2.rectangle(out, (x1, y1 - th - 6), (x1 + tw + 4, y1), (0, 200, 80), -1)
             cv2.putText(out, label, (x1 + 2, y1 - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 1)
@@ -172,6 +174,14 @@ class ONNXEngine:
         preds = raw[0]  # [5, 8400] or [8400, 5] depending on export opset
         if preds.shape[0] < preds.shape[1]:
             preds = preds.T  # normalise to [8400, 5]
+
+        # Temperature-scale the confidence head before thresholding. T==1 is a
+        # no-op; T!=1 reshapes the score distribution to match validation-set
+        # calibration. Done on raw probs via the logit trick.
+        if self.confidence_temperature != 1.0:
+            p = np.clip(preds[:, 4], 1e-7, 1 - 1e-7)
+            logit = np.log(p / (1 - p))
+            preds[:, 4] = 1.0 / (1.0 + np.exp(-logit / self.confidence_temperature))
 
         conf_mask = preds[:, 4] >= self.confidence_threshold
         preds = preds[conf_mask]

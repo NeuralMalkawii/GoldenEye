@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { api, type Detection } from "@/lib/api";
 
-type Source = "webcam" | "screen" | "demo";
+type Source = "webcam" | "screen";
 type ConnState = "idle" | "connecting" | "live" | "error";
 
 type FrameResult = {
@@ -14,16 +14,17 @@ type FrameResult = {
   timing: { preprocess_ms: number; inference_ms: number; postprocess_ms: number };
 };
 
-// Build SVG box markup — coordinates are in native video resolution.
+// Build SVG box markup — coordinates are in the encoded JPEG resolution.
 // The SVG viewBox handles all scaling to display size automatically.
 function buildOverlaySVG(dets: Detection[]): string {
   return dets
     .map((d, i) => {
       const [x1, y1, x2, y2] = d.bbox;
       const w = x2 - x1;
-      const h = y2 - y1;
       const conf = Math.round(d.confidence * 100);
-      const cs = Math.min(12, Math.max(6, Math.round(w * 0.15)));  // corner size scales with box
+      const cs = Math.min(12, Math.max(6, Math.round(w * 0.15)));
+      const label = `#${i + 1}`;
+      const labelWidth = 14 + label.length * 7 + 26;
       return `
         <g>
           <line x1="${x1}"   y1="${y1+cs}" x2="${x1}"   y2="${y1}"   stroke="var(--amber)" stroke-width="2"/>
@@ -34,11 +35,11 @@ function buildOverlaySVG(dets: Detection[]): string {
           <line x1="${x2}"   y1="${y2}"    x2="${x2-cs}" y2="${y2}"   stroke="var(--amber)" stroke-width="2"/>
           <line x1="${x1+cs}" y1="${y2}"  x2="${x1}"   y2="${y2}"     stroke="var(--amber)" stroke-width="2"/>
           <line x1="${x1}"   y1="${y2}"    x2="${x1}"   y2="${y2-cs}" stroke="var(--amber)" stroke-width="2"/>
-          <rect x="${x1}" y="${y1-20}" width="56" height="18"
+          <rect x="${x1}" y="${y1-20}" width="${labelWidth}" height="18"
             fill="oklch(0.08 0.008 54 / 0.85)" stroke="var(--amber-dim)" stroke-width="0.5" rx="2"/>
           <text x="${x1+4}" y="${y1-6}" fill="var(--amber)"
             style="font-family:monospace;font-size:11px;font-weight:600;">
-            #${i+1} ${conf}%
+            ${label} ${conf}%
           </text>
         </g>`;
     })
@@ -50,19 +51,16 @@ export default function LivePage() {
   const [conn, setConn] = useState<ConnState>("idle");
   const [error, setError] = useState("");
   const [fps, setFps] = useState(0);
-  const [totalDetections, setTotalDetections] = useState(0);
   const [latestResult, setLatestResult] = useState<FrameResult | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const demoVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameLoopRef = useRef<number | null>(null);
   const fpsFrames = useRef<number[]>([]);
-  const activeRef = useRef(false);  // tracks whether session is alive
-  // Most recent encoded frame size — bboxes from the server are in this space
+  const activeRef = useRef(false);
   const encodedSize = useRef({ w: 0, h: 0 });
 
   const stopSession = useCallback(() => {
@@ -76,7 +74,6 @@ export default function LivePage() {
     wsRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-    demoVideoRef.current?.pause();
     setConn("idle");
     setLatestResult(null);
     setFps(0);
@@ -88,18 +85,7 @@ export default function LivePage() {
   const startSession = useCallback(async () => {
     setConn("connecting");
     setError("");
-    setTotalDetections(0);
     fpsFrames.current = [];
-
-    // ── Demo mode: just play the pre-recorded video, no WebSocket needed
-    if (source === "demo") {
-      const dv = demoVideoRef.current;
-      if (!dv) return;
-      dv.currentTime = 0;
-      await dv.play().catch(() => {});
-      setConn("live");
-      return;
-    }
 
     try {
       const stream =
@@ -108,8 +94,6 @@ export default function LivePage() {
           : await navigator.mediaDevices.getUserMedia({ video: { frameRate: 15 } });
 
       streamRef.current = stream;
-
-      // Stop session automatically if the user ends the screen share via browser UI
       stream.getVideoTracks()[0].addEventListener("ended", () => stopSession());
 
       const video = videoRef.current!;
@@ -129,22 +113,17 @@ export default function LivePage() {
       };
 
       ws.onclose = () => {
-        // Only reset UI if this close wasn't triggered by stopSession already
         if (activeRef.current) stopSession();
       };
 
       ws.onmessage = (e) => {
         const data: FrameResult = JSON.parse(e.data);
         setLatestResult(data);
-        setTotalDetections((n) => n + data.count);
 
         const now = performance.now();
         fpsFrames.current = [...fpsFrames.current.filter((t) => now - t < 1000), now];
         setFps(fpsFrames.current.length);
 
-        // Server returns bboxes in the *encoded* JPEG coordinate space.
-        // Match the SVG viewBox to that — not the native video size — so the
-        // 1280-cap downscale doesn't shift the boxes.
         const svg = overlayRef.current;
         if (svg) {
           const { w: ew, h: eh } = encodedSize.current;
@@ -162,16 +141,10 @@ export default function LivePage() {
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext("2d")!;
       let sending = false;
-
-      // Cap encoded frame width — server letterboxes to 640 anyway, so anything
-      // above ~1280 wastes network without buying accuracy. 4K screen-shares
-      // would otherwise push ~500 KB JPEGs per frame.
       const MAX_ENCODE_WIDTH = 1280;
 
       const sendFrame = () => {
-        // Stop the loop if session ended
         if (!activeRef.current) return;
-
         frameLoopRef.current = requestAnimationFrame(sendFrame);
 
         const currentWs = wsRef.current;
@@ -194,7 +167,6 @@ export default function LivePage() {
         canvas.toBlob((blob) => {
           if (!blob) { sending = false; return; }
           blob.arrayBuffer().then((buf) => {
-            // Re-check state — WS may have closed while the blob was encoding
             const ws = wsRef.current;
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(buf);
             sending = false;
@@ -224,16 +196,20 @@ export default function LivePage() {
       <Navbar />
       <main className="flex-1 page-enter max-w-7xl mx-auto px-6 py-12">
         <div className="mb-8">
-          <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--amber)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--bronze)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             Detection · Live
           </p>
           <h1 className="font-display" style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300, color: "var(--sand)", fontOpticalSizing: "auto" }}>
             Real-time stream
           </h1>
+          <p style={{ marginTop: "0.6rem", color: "var(--sand-dim)", fontSize: "0.92rem", maxWidth: "60ch", lineHeight: 1.6 }}>
+            Stream frames from a camera or a shared screen. Each frame is processed by
+            the YOLOv8n model and the bounding boxes are drawn over the live preview.
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-5 gap-8">
-          {/* ── Video pane ── */}
+          {/* Video pane */}
           <div className="lg:col-span-3">
             <div
               style={{
@@ -250,31 +226,19 @@ export default function LivePage() {
                 boxShadow: isLive ? "0 0 0 1px var(--amber-dim), 0 0 24px var(--amber-glow)" : "none",
               }}
             >
-              {/* Live stream (screen share / webcam) */}
               <video
                 ref={videoRef}
                 muted
                 playsInline
-                style={{ display: isLive && source !== "demo" ? "block" : "none", width: "100%", maxHeight: 520, objectFit: "contain" }}
+                style={{ display: isLive ? "block" : "none", width: "100%", maxHeight: 520, objectFit: "contain" }}
               />
 
-              {/* Demo playback video */}
-              <video
-                ref={demoVideoRef}
-                playsInline
-                loop
-                style={{ display: isLive && source === "demo" ? "block" : "none", width: "100%", maxHeight: 520, objectFit: "contain" }}
-                src="/demo_flight.mp4"
-              />
-
-              {/* SVG overlay — viewBox = native resolution, width/height = display size */}
               <svg
                 ref={overlayRef}
-                style={{ display: source === "demo" ? "none" : undefined, position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
+                style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
                 preserveAspectRatio="none"
               />
 
-              {/* Hidden canvas for frame capture */}
               <canvas ref={canvasRef} style={{ display: "none" }} />
 
               {!isLive && (
@@ -288,7 +252,7 @@ export default function LivePage() {
                     </>
                   )}
                   {conn === "connecting" && (
-                    <p className="font-data" style={{ color: "var(--amber)", letterSpacing: "0.06em", fontSize: "0.8rem" }}>
+                    <p className="font-data" style={{ color: "var(--bronze)", letterSpacing: "0.06em", fontSize: "0.8rem" }}>
                       CONNECTING…
                     </p>
                   )}
@@ -308,31 +272,19 @@ export default function LivePage() {
                 </div>
               )}
             </div>
-
-            {isLive && source === "screen" && (
-              <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--sand-faint)" }}>
-                Tip: For best results, open SAR images full-screen or zoom in — tiny figures at high altitude may be below detection threshold.
-              </p>
-            )}
-            {isLive && source === "demo" && (
-              <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--sand-faint)" }}>
-                Simulation: lawnmower scan at 50 m altitude over Shaheen 4K imagery. Run <code style={{ fontSize: "0.7rem", color: "var(--amber)" }}>python simulation/fly_simulation.py</code> to regenerate.
-              </p>
-            )}
           </div>
 
-          {/* ── Control panel ── */}
+          {/* Control panel */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             {/* Source selector */}
             <div className="ge-card" style={{ padding: "1.25rem" }}>
-              <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 Source
               </p>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 {([
                   { id: "screen", label: "Screen share" },
-                  { id: "webcam", label: "Webcam" },
-                  { id: "demo",   label: "Sim demo" },
+                  { id: "webcam", label: "Camera" },
                 ] as { id: Source; label: string }[]).map(({ id, label }) => (
                   <button
                     key={id}
@@ -357,24 +309,21 @@ export default function LivePage() {
                   </button>
                 ))}
               </div>
-              {source === "demo" && (
-                <p style={{ marginTop: "0.5rem", fontSize: "0.72rem", color: "var(--sand-faint)", lineHeight: 1.5 }}>
-                  Plays a pre-recorded UAV simulation over real Shaheen 4K imagery. No API connection needed.
-                </p>
-              )}
             </div>
 
             {/* Live stats */}
             <div className="ge-card" style={{ padding: "1.25rem" }}>
-              <p className="font-data mb-4" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              <p className="font-data mb-4" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 Stats
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                 {[
-                  { label: "FPS",        value: isLive ? fps : "—" },
-                  { label: "Detections", value: isLive ? totalDetections : "—" },
-                  { label: "Last count", value: isLive ? (latestResult?.count ?? 0) : "—" },
-                  { label: "Infer ms",   value: isLive && latestResult ? latestResult.timing.inference_ms.toFixed(0) : "—" },
+                  { label: "FPS",      value: isLive ? fps : "—" },
+                  { label: "Detected", value: isLive ? (latestResult?.count ?? 0) : "—" },
+                  { label: "Infer ms", value: isLive && latestResult ? latestResult.timing.inference_ms.toFixed(0) : "—" },
+                  { label: "Total ms", value: isLive && latestResult
+                      ? (latestResult.timing.preprocess_ms + latestResult.timing.inference_ms + latestResult.timing.postprocess_ms).toFixed(0)
+                      : "—" },
                 ].map(({ label, value }) => (
                   <div key={label} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 4, padding: "0.75rem" }}>
                     <div className="font-data" style={{ fontSize: "1.2rem", color: "var(--amber)", fontWeight: 500 }}>{value}</div>
@@ -384,16 +333,18 @@ export default function LivePage() {
               </div>
             </div>
 
-            {/* Detection list — latest frame */}
+            {/* Latest detections */}
             {isLive && latestResult && latestResult.count > 0 && (
               <div className="ge-card" style={{ padding: "1.25rem" }}>
-                <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                   Latest detections
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   {latestResult.detections.map((d, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.6rem", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 4 }}>
-                      <span className="font-data" style={{ fontSize: "0.68rem", color: "var(--sand-dim)" }}>#{i + 1} person</span>
+                      <span className="font-data" style={{ fontSize: "0.68rem", color: "var(--sand-dim)" }}>
+                        #{i + 1} human
+                      </span>
                       <span className="badge-success">{Math.round(d.confidence * 100)}%</span>
                     </div>
                   ))}
@@ -401,7 +352,6 @@ export default function LivePage() {
               </div>
             )}
 
-            {/* Action */}
             {isLive ? (
               <button type="button" className="ge-btn" style={{ background: "var(--terra)", width: "100%" }} onClick={stopSession}>
                 Stop session

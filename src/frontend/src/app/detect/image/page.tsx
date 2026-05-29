@@ -76,13 +76,10 @@ function DetectionOverlay({
   );
 }
 
-type Mode = "full" | "sahi";
-
 export default function DetectImagePage() {
   const [state, setState] = useState<State>({ phase: "idle" });
   const [dragOver, setDragOver] = useState(false);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0, nw: 0, nh: 0 });
-  const [mode, setMode] = useState<Mode>("full");
   const imgRef = useRef<HTMLImageElement>(null);
   const currentObjectUrl = useRef<string | null>(null);
 
@@ -105,13 +102,13 @@ export default function DetectImagePage() {
   const process = useCallback(async (file: File) => {
     setStateWithUrlCleanup({ phase: "loading" });
     try {
-      const result = await api.detectImage(file, mode);
+      const result = await api.detectImage(file);
       const objectUrl = URL.createObjectURL(file);
       setStateWithUrlCleanup({ phase: "result", result, objectUrl });
     } catch (e: unknown) {
       setStateWithUrlCleanup({ phase: "error", message: e instanceof Error ? e.message : String(e) });
     }
-  }, [setStateWithUrlCleanup, mode]);
+  }, [setStateWithUrlCleanup]);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -150,7 +147,7 @@ export default function DetectImagePage() {
       <main className="flex-1 page-enter max-w-7xl mx-auto px-6 py-12">
         {/* Page header */}
         <div className="mb-10">
-          <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--amber)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <p className="font-data mb-2" style={{ fontSize: "0.7rem", color: "var(--bronze)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             Detection · Image
           </p>
           <h1 className="font-display" style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300, color: "var(--sand)", fontOpticalSizing: "auto" }}>
@@ -209,7 +206,7 @@ export default function DetectImagePage() {
               >
                 <div className="skeleton" style={{ width: 200, height: 12, borderRadius: 4 }} />
                 <div className="skeleton" style={{ width: 140, height: 10, borderRadius: 4 }} />
-                <p className="font-data" style={{ fontSize: "0.72rem", color: "var(--amber)", letterSpacing: "0.06em", marginTop: "0.5rem" }}>
+                <p className="font-data" style={{ fontSize: "0.72rem", color: "var(--bronze)", letterSpacing: "0.06em", marginTop: "0.5rem" }}>
                   RUNNING INFERENCE…
                 </p>
               </div>
@@ -242,7 +239,7 @@ export default function DetectImagePage() {
               <>
                 {/* Summary card */}
                 <div className="ge-card" style={{ padding: "1.25rem" }}>
-                  <p className="font-data mb-4" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  <p className="font-data mb-4" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                     Detection summary
                   </p>
                   <div className="flex items-end gap-3 mb-4">
@@ -275,7 +272,7 @@ export default function DetectImagePage() {
 
                 {/* Per-detection list */}
                 <div className="ge-card" style={{ padding: "1.25rem", flex: 1 }}>
-                  <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                     Detections
                   </p>
                   {state.result.detections.length === 0 ? (
@@ -310,66 +307,22 @@ export default function DetectImagePage() {
                 </div>
               </>
             ) : (
-              <>
-                {/* Mode toggle */}
-                <div className="ge-card" style={{ padding: "1.25rem" }}>
-                  <p className="font-data mb-3" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                    Inference mode
-                  </p>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    {([
-                      { id: "full", label: "Full frame", hint: "Single 640 letterbox · fast" },
-                      { id: "sahi", label: "SAHI tiled", hint: "Overlapping tiles · 4K-grade" },
-                    ] as { id: Mode; label: string; hint: string }[]).map(({ id, label, hint }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setMode(id)}
-                        style={{
-                          flex: 1,
-                          padding: "0.6rem 0.5rem",
-                          borderRadius: 4,
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.04em",
-                          textAlign: "left",
-                          cursor: "pointer",
-                          transition: "all 0.12s",
-                          background: mode === id ? "var(--amber-glow)" : "var(--surface)",
-                          border: `1px solid ${mode === id ? "var(--amber-dim)" : "var(--border)"}`,
-                          color: mode === id ? "var(--amber)" : "var(--sand-dim)",
-                        }}
-                      >
-                        <div>{label}</div>
-                        <div className="font-data" style={{ fontSize: "0.62rem", color: "var(--sand-faint)", letterSpacing: "0.02em", textTransform: "none", fontWeight: 400, marginTop: "0.2rem" }}>
-                          {hint}
-                        </div>
-                      </button>
-                    ))}
+              <div className="ge-card" style={{ padding: "1.5rem", flex: 1 }}>
+                <p className="font-data mb-6" style={{ fontSize: "0.65rem", color: "var(--bronze)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  How it works
+                </p>
+                {[
+                  ["01", "Upload an aerial desert image."],
+                  ["02", "The image is preprocessed and passed to YOLOv8n."],
+                  ["03", "Confidence filtering and non-maximum suppression remove weak or duplicate detections."],
+                  ["04", "Bounding boxes and confidence scores are overlaid; download the annotated image."],
+                ].map(([n, t]) => (
+                  <div key={n} className="flex gap-3 mb-4">
+                    <span className="font-data" style={{ fontSize: "0.7rem", color: "var(--amber)", minWidth: 20, marginTop: "0.1rem" }}>{n}</span>
+                    <span style={{ fontSize: "0.85rem", color: "var(--sand-dim)", lineHeight: 1.5 }}>{t}</span>
                   </div>
-                  <p style={{ marginTop: "0.6rem", fontSize: "0.72rem", color: "var(--sand-faint)", lineHeight: 1.5 }}>
-                    Use SAHI for 4K aerial imagery where targets are smaller than ~30 px.
-                  </p>
-                </div>
-
-                {/* Placeholder panel */}
-                <div className="ge-card" style={{ padding: "1.5rem", flex: 1 }}>
-                  <p className="font-data mb-6" style={{ fontSize: "0.65rem", color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                    How it works
-                  </p>
-                  {[
-                    ["01", "Upload any aerial or ground-level image."],
-                    ["02", "YOLOv8n runs inference via ONNX Runtime (~42 ms / tile)."],
-                    ["03", "Bounding boxes and confidence scores are overlaid."],
-                    ["04", "Download the annotated image."],
-                  ].map(([n, t]) => (
-                    <div key={n} className="flex gap-3 mb-4">
-                      <span className="font-data" style={{ fontSize: "0.7rem", color: "var(--amber)", minWidth: 20, marginTop: "0.1rem" }}>{n}</span>
-                      <span style={{ fontSize: "0.85rem", color: "var(--sand-dim)", lineHeight: 1.5 }}>{t}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
+                ))}
+              </div>
             )}
           </div>
         </div>

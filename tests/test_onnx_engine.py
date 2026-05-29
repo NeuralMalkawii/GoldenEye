@@ -83,7 +83,7 @@ class TestPostprocess:
         dets = engine._postprocess(raw, scale=1.0, pad_x=0, pad_y=0, orig_w=640, orig_h=640)
         assert len(dets) == 1
         assert dets[0].confidence == pytest.approx(0.85, abs=1e-4)
-        assert dets[0].class_name == "person"
+        assert dets[0].class_name == "human"
 
     def test_bbox_coordinates_in_image_bounds(self, engine):
         raw = self._make_raw(320, 320, 100, 100, conf=0.9)

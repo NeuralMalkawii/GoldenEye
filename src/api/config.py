@@ -13,11 +13,16 @@ class Settings(BaseSettings):
     model_path: str = "models/best.onnx"
     confidence_threshold: float = 0.25
     nms_iou_threshold: float = 0.45
+    # Temperature scaling on the confidence head. 1.0 = no change. >1 shrinks
+    # over-confident outputs so a reported 0.9 empirically means ~0.9 precision.
+    # Calibrate this once against the validation set; see docs/calibration.md.
+    confidence_temperature: float = 1.0
     redis_url: str = "redis://localhost:6379/0"
     cors_origins: str = "http://localhost:3000"
     upload_dir: str = "uploads"
     jobs_dir: str = "jobs"
     max_upload_mb: int = 500
+    sentry_dsn: str | None = None
 
 
 @lru_cache

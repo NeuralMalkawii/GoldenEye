@@ -28,6 +28,7 @@ def _get_engine() -> ONNXEngine:
             settings.model_path,
             confidence_threshold=settings.confidence_threshold,
             nms_iou_threshold=settings.nms_iou_threshold,
+            confidence_temperature=settings.confidence_temperature,
         )
     return _engine
 

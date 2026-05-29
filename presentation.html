@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GoldenEye — Capstone Defense Deck</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!--
+    Single-file presentation. Open in a browser, then File → Print → Save as PDF.
+    Settings: Layout = Landscape · Margins = None · Background graphics = ON.
+    Each <section.slide> renders as one A4-landscape page.
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Syne:wght@400;500;600;700;800&family=B612+Mono:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ── Design tokens — mirror the GoldenEye website palette 1:1 ── */
+    :root {
+      --void:        oklch(0.08 0.008 54);
+      --surface:     oklch(0.11 0.008 54);
+      --card-bg:     oklch(0.14 0.008 54);
+      --card-raised: oklch(0.18 0.009 54);
+      --border:      oklch(0.24 0.009 54);
+      --border-lit:  oklch(0.32 0.012 54);
+
+      --amber:        oklch(0.72 0.135 70);
+      --amber-bright: oklch(0.78 0.140 72);
+      --amber-dim:    oklch(0.42 0.080 62);
+      --amber-glow:   oklch(0.72 0.135 70 / 0.12);
+
+      --bronze:       oklch(0.62 0.062 65);
+      --bronze-dim:   oklch(0.48 0.045 60);
+      --copper:       oklch(0.60 0.118 45);
+
+      --terra:        oklch(0.54 0.150 38);
+      --terra-glow:   oklch(0.54 0.150 38 / 0.14);
+
+      --rust:         oklch(0.48 0.135 27);
+
+      --sand:         oklch(0.88 0.025 84);
+      --sand-dim:     oklch(0.62 0.020 72);
+      --sand-faint:   oklch(0.32 0.012 54);
+      --paper:        oklch(0.92 0.022 88);
+      --ink:          oklch(0.22 0.018 60);
+
+      --success:      oklch(0.58 0.085 155);
+      --success-glow: oklch(0.58 0.085 155 / 0.14);
+
+      --font-display:    "Fraunces", Georgia, serif;
+      --font-sans:       "Syne", -apple-system, system-ui, sans-serif;
+      --font-data:       "B612 Mono", ui-monospace, monospace;
+      --font-typewriter: "Special Elite", "Courier New", monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--void);
+      color: var(--sand);
+      font-family: var(--font-sans);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      color-scheme: dark;
+    }
+
+    body {
+      padding: 1.5rem 0;
+    }
+
+    /* ── Slide container ──
+       A4 landscape (297×210mm). On screen we let it scale fluidly via max-width;
+       in print mode it locks to A4 landscape and each slide becomes one page. */
+    .slide {
+      position: relative;
+      width: 297mm;
+      height: 210mm;
+      max-width: 100%;
+      margin: 0 auto 1.5rem;
+      background: var(--void);
+      color: var(--sand);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 48px oklch(0 0 0 / 0.5), 0 0 0 1px var(--border);
+      page-break-after: always;
+    }
+    .slide:last-of-type { page-break-after: auto; }
+
+    /* Star-lattice texture as on the website — slight cultural warmth */
+    .slide::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23e8a020' stroke-width='0.5' opacity='0.2'%3E%3Cpolygon points='48,4 54,20 68,12 62,28 78,28 68,40 78,52 62,52 68,68 54,60 48,76 42,60 28,68 34,52 18,52 28,40 18,28 34,28 28,12 42,20' /%3E%3Ccircle cx='48' cy='40' r='8'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 96px 96px;
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .slide > * { position: relative; z-index: 1; }
+
+    /* Two atmospheric radial washes for depth */
+    .slide::after {
+      content: "";
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 18% 36%, oklch(0.72 0.135 70 / 0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 70% at 86% 18%, oklch(0.54 0.150 38 / 0.05) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Slide chrome ── */
+    .slide-header,
+    .slide-footer {
+      flex: 0 0 auto;
+      padding: 4mm 12mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      font-family: var(--font-data);
+      font-size: 8pt;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .slide-header {
+      border-bottom: 1px solid var(--border);
+      color: var(--bronze);
+    }
+    .slide-footer {
+      border-top: 1px solid var(--border);
+      color: var(--sand-faint);
+      font-size: 7.5pt;
+    }
+    .slide-section-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .slide-section-tag .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--amber); box-shadow: 0 0 6px var(--amber);
+    }
+    .slide-counter { color: var(--sand-faint); }
+
+    .slide-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 4mm 11mm 4mm;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      overflow: hidden;
+    }
+
+    /* ── Type ── */
+    .eyebrow {
+      font-family: var(--font-data);
+      font-size: 8pt;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--bronze);
+      margin-bottom: 2.5mm;
+      display: inline-block;
+    }
+    .eyebrow .diamond { color: var(--amber); margin-right: 0.3rem; }
+
+    .h-display {
+      font-family: var(--font-display);
+      font-weight: 300;
+      letter-spacing: -0.018em;
+      line-height: 1.04;
+      color: var(--sand);
+      font-optical-sizing: auto;
+    }
+    .h-display em {
+      font-style: italic;
+      color: var(--amber);
+      font-weight: 400;
+    }
+    .h1 { font-size: 44pt; }
+    .h2 { font-size: 28pt; }
+    .h3 { font-size: 20pt; font-weight: 400; }
+    .h4 { font-size: 15pt; font-weight: 500; }
+
+    .body-text {
+      font-size: 10pt;
+      line-height: 1.5;
+      color: var(--sand-dim);
+      max-width: 60ch;
+    }
+    .lead {
+      font-size: 12pt;
+      line-height: 1.45;
+      color: var(--sand);
+      max-width: 56ch;
+    }
+    .mono { font-family: var(--font-data); }
+    .typewriter { font-family: var(--font-typewriter); }
+
+    /* ── Card primitives ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4mm 5mm;
+    }
+    .card-amber {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--amber-dim);
+      border-radius: 3px;
+      padding: 4mm 5mm;
+    }
+    .card-paper {
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid oklch(0.84 0.025 84);
+      border-radius: 3px;
+      padding: 4mm 5mm;
+      font-family: var(--font-typewriter);
+      font-size: 10pt;
+      line-height: 1.55;
+      box-shadow: inset 0 0 0 1px oklch(0.94 0.022 88), 0 1px 0 var(--void);
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 99px;
+      font-family: var(--font-data);
+      font-size: 8pt;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .badge-amber  { background: var(--amber-glow);   border: 1px solid var(--amber-dim);  color: var(--amber-bright); }
+    .badge-terra  { background: var(--terra-glow);   border: 1px solid var(--terra);      color: var(--terra); }
+    .badge-success{ background: var(--success-glow); border: 1px solid var(--success);    color: var(--success); }
+    .badge-bronze { background: transparent;         border: 1px solid var(--border-lit); color: var(--bronze); }
+
+    /* ── Grid helpers ── */
+    .grid { display: grid; gap: 6mm; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    /* ── Status ribbon ── */
+    .status-ribbon {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      padding: 2mm 12mm;
+      background: linear-gradient(180deg, var(--surface), var(--void));
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-data);
+      font-size: 7pt;
+      letter-spacing: 0.1em;
+      color: var(--bronze);
+      flex-wrap: wrap;
+      flex: 0 0 auto;
+    }
+    .status-ribbon .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--amber-bright);
+    }
+    .status-ribbon .live::before {
+      content: "";
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--amber); box-shadow: 0 0 6px var(--amber);
+    }
+    .status-ribbon .label { color: var(--sand-faint); }
+    .status-ribbon .value { color: var(--sand-dim); }
+
+    /* ── Metric tiles ── */
+    .metric {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4mm 5mm;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .metric .value {
+      font-family: var(--font-display);
+      font-size: 28pt;
+      font-weight: 700;
+      color: var(--amber);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-optical-sizing: auto;
+    }
+    .metric .label {
+      font-size: 9.5pt;
+      color: var(--sand);
+      font-weight: 500;
+    }
+    .metric .sub {
+      font-family: var(--font-data);
+      font-size: 7.5pt;
+      color: var(--sand-faint);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Tactical corner ticks ── */
+    .corners {
+      position: relative;
+    }
+    .corners::before, .corners::after,
+    .corners > .corner-tl, .corners > .corner-tr,
+    .corners > .corner-bl, .corners > .corner-br {
+      content: "";
+      position: absolute;
+      width: 14px; height: 14px;
+      pointer-events: none;
+    }
+    .corners::before { top: 0; left: 0; border-top: 1px solid var(--amber); border-left: 1px solid var(--amber); }
+    .corners::after  { top: 0; right: 0; border-top: 1px solid var(--amber); border-right: 1px solid var(--amber); }
+    .corners > .corner-bl { bottom: 0; left: 0; border-bottom: 1px solid var(--amber); border-left: 1px solid var(--amber); }
+    .corners > .corner-br { bottom: 0; right: 0; border-bottom: 1px solid var(--amber); border-right: 1px solid var(--amber); }
+
+    /* ── Print hint ── */
+    .print-hint {
+      max-width: 297mm;
+      margin: 0 auto 1.5rem;
+      padding: 0.85rem 1.2rem;
+      background: var(--card-bg);
+      border: 1px dashed var(--amber-dim);
+      border-radius: 4px;
+      font-family: var(--font-data);
+      font-size: 9pt;
+      color: var(--bronze);
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .print-hint strong { color: var(--amber); }
+
+    /* ── Print rules ── */
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+    @media print {
+      body { padding: 0; background: var(--void); }
+      .print-hint { display: none; }
+      .slide {
+        box-shadow: none;
+        width: 297mm;
+        height: 210mm;
+        margin: 0;
+        page-break-after: always;
+        page-break-inside: avoid;
+      }
+      .slide:last-of-type { page-break-after: auto; }
+    }
+
+    /* ── Specialised layouts per slide ── */
+
+    /* Cover */
+    .cover {
+      flex-direction: row;
+      align-items: stretch;
+      padding: 0;
+      gap: 0;
+    }
+    .cover-left {
+      flex: 1 1 auto;
+      padding: 10mm 8mm 10mm 14mm;
+      display: flex;
+      flex-direction: column;
+      gap: 3.5mm;
+      justify-content: center;
+      min-width: 0;
+    }
+    .cover-right {
+      flex: 0 0 36%;
+      padding: 8mm 14mm 8mm 6mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4mm;
+      border-left: 1px solid var(--border);
+      background: linear-gradient(180deg, transparent, var(--surface) 80%);
+    }
+    .cover .wordmark {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: 68pt;
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      color: var(--sand);
+      font-optical-sizing: auto;
+    }
+    .cover .wordmark em {
+      font-style: italic;
+      color: var(--amber);
+      font-weight: 400;
+    }
+    .cover .tagline-line {
+      width: 60px; height: 1px; background: var(--amber); margin: 1mm 0;
+    }
+
+    /* Stat block */
+    .stat-block {
+      padding: 4mm 5mm;
+      border-left: 2px solid var(--amber);
+      background: linear-gradient(90deg, var(--amber-glow), transparent);
+    }
+    .stat-block .stat {
+      font-family: var(--font-display);
+      font-size: 30pt;
+      font-weight: 600;
+      color: var(--amber);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-optical-sizing: auto;
+    }
+    .stat-block .stat-unit {
+      color: var(--sand-dim);
+      font-size: 12pt;
+      margin-left: 0.3rem;
+      font-weight: 400;
+    }
+    .stat-block .stat-label {
+      margin-top: 1.5mm;
+      font-family: var(--font-data);
+      font-size: 8.5pt;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--bronze);
+    }
+    .stat-block .stat-note {
+      margin-top: 1.5mm;
+      font-size: 9pt;
+      color: var(--sand-dim);
+      line-height: 1.45;
+    }
+
+    /* Architecture node */
+    .arch-node {
+      background: var(--card-bg);
+      border: 1px solid var(--border-lit);
+      border-radius: 3px;
+      padding: 3mm 4.5mm;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 1mm;
+      min-width: 28mm;
+      text-align: left;
+    }
+    .arch-node .name {
+      font-family: var(--font-data);
+      font-size: 9pt;
+      color: var(--amber);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .arch-node .sub {
+      font-size: 8pt;
+      color: var(--sand-dim);
+      font-family: var(--font-data);
+      letter-spacing: 0.02em;
+    }
+
+    /* Stamp */
+    .stamp-wrap {
+      position: absolute;
+      transform: rotate(-7deg);
+      opacity: 0.92;
+      pointer-events: none;
+    }
+
+    /* Helper utilities */
+    .flex { display: flex; }
+    .col  { flex-direction: column; }
+    .row  { flex-direction: row; }
+    .gap-1 { gap: 0.4rem; } .gap-2 { gap: 0.8rem; } .gap-3 { gap: 1.2rem; } .gap-4 { gap: 1.6rem; }
+    .mt-1 { margin-top: 0.3rem; } .mt-2 { margin-top: 0.6rem; } .mt-3 { margin-top: 0.9rem; } .mt-4 { margin-top: 1.2rem; } .mt-6 { margin-top: 1.8rem; }
+    .mb-1 { margin-bottom: 0.4rem; } .mb-2 { margin-bottom: 0.8rem; } .mb-3 { margin-bottom: 1.2rem; }
+    .ml-auto { margin-left: auto; }
+    .center { text-align: center; }
+
+    /* Heat-map matrix */
+    .matrix-table { width: 100%; border-collapse: collapse; }
+    .matrix-table th, .matrix-table td {
+      padding: 2mm 3.5mm;
+      text-align: center;
+      font-family: var(--font-data);
+      font-size: 9.5pt;
+      border: 1px solid var(--border);
+    }
+    .matrix-table th {
+      background: var(--surface);
+      color: var(--bronze);
+      font-size: 8.5pt;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .matrix-table th:first-child, .matrix-table td:first-child {
+      text-align: left;
+      color: var(--sand);
+      letter-spacing: 0.02em;
+      text-transform: none;
+      font-family: var(--font-sans);
+      font-size: 9.5pt;
+      font-weight: 500;
+    }
+    .matrix-cell {
+      position: relative;
+    }
+    .matrix-cell.hi { color: var(--amber); font-weight: 600; }
+    .matrix-cell.mid{ color: var(--success); }
+    .matrix-cell.lo { color: var(--sand-dim); }
+    .matrix-cell.diag { background: var(--amber-glow); }
+  </style>
+</head>
+
+<body>
+
+<!-- Print hint — visible on screen only -->
+<div class="print-hint">
+  <span>📄</span>
+  <span>
+    Save as PDF with <strong>Ctrl + P</strong> →
+    Layout: <strong>Landscape</strong> ·
+    Margins: <strong>None</strong> ·
+    Background graphics: <strong>ON</strong>
+  </span>
+  <span style="margin-left: auto; color: var(--sand-faint);">11 slides · A4 landscape</span>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 1 — Cover
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="status-ribbon">
+    <span class="live">LIVE</span>
+    <span><span class="label">JOR</span> <span class="value">29.53°N 35.47°E</span></span>
+    <span><span class="label">UAE</span> <span class="value">24.12°N 55.32°E</span></span>
+    <span><span class="label">GMT+3</span> <span class="value">defense session</span></span>
+    <span><span class="label">MODEL</span> <span class="value">best.onnx · YOLOv8n</span></span>
+    <span style="margin-left:auto"><span class="label">OPS-DAY</span> <span class="value">266</span></span>
+  </div>
+
+  <div class="slide-body cover">
+    <div class="cover-left">
+      <div>
+        <span class="eyebrow"><span class="diamond">◆</span> Capstone Defense · HTU · 2026</span>
+      </div>
+      <div class="wordmark">
+        GOLDEN<em>EYE</em>
+      </div>
+      <div class="h-display h3" style="max-width: 22ch;">
+        Find. <em>Confirm.</em> <span style="color:var(--sand)">Save.</span>
+      </div>
+      <div class="tagline-line"></div>
+      <div class="body-text" style="max-width: 56ch; font-size: 11pt; line-height: 1.45;">
+        An aerial human-detection system for desert Search &amp; Rescue —
+        a YOLOv8 detector that runs fully offline on a Raspberry Pi 5 with
+        Hailo-8L, served by a FastAPI + Next.js stack anyone can demo in a browser.
+      </div>
+
+      <div class="flex gap-2" style="flex-wrap: wrap; margin-top: 2mm;">
+        <span class="badge badge-amber">YOLOv8n · ONNX</span>
+        <span class="badge badge-amber">FastAPI · WS</span>
+        <span class="badge badge-amber">Next.js 16</span>
+        <span class="badge badge-amber">Pi 5 + Hailo</span>
+      </div>
+
+      <div style="margin-top: 3mm;">
+        <div class="flex" style="gap: 4mm; align-items: baseline;">
+          <span class="mono" style="font-size: 7.5pt; letter-spacing: 0.12em; color: var(--bronze); text-transform: uppercase; min-width: 22mm;">Operators</span>
+          <span style="font-size: 10.5pt; color: var(--sand);">Omar Malkawi · Hamza Jad Allah · Suhaib Alajami</span>
+        </div>
+        <div class="flex" style="gap: 4mm; align-items: baseline; margin-top: 1.5mm;">
+          <span class="mono" style="font-size: 7.5pt; letter-spacing: 0.12em; color: var(--bronze); text-transform: uppercase; min-width: 22mm;">Supervisor</span>
+          <span style="font-size: 10pt; color: var(--sand-dim);">Dr. Rami Al-Ouran  ·  AlHussein Technical University</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-right">
+      <!-- Mission patch -->
+      <svg width="200" height="200" viewBox="0 0 96 96" aria-label="GoldenEye mission patch">
+        <defs>
+          <path id="mp-out" d="M 48 48 m -38 0 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0"/>
+          <path id="mp-out-b" d="M 48 48 m 38 0 a 38 38 0 1 1 -76 0"/>
+        </defs>
+        <circle cx="48" cy="48" r="46" fill="none" stroke="var(--amber-dim)" stroke-width="0.6" stroke-dasharray="1.4 2.4"/>
+        <circle cx="48" cy="48" r="42" fill="none" stroke="var(--amber-dim)" stroke-width="0.5"/>
+        <text font-family="var(--font-data)" font-size="4.2" fill="var(--bronze)" letter-spacing="0.6">
+          <textPath href="#mp-out" startOffset="2%">OPERATION · GOLDENEYE · HTU · CAPSTONE · MMXXVI · SAR</textPath>
+        </text>
+        <text font-family="var(--font-data)" font-size="3.8" fill="var(--bronze-dim)" letter-spacing="0.5">
+          <textPath href="#mp-out-b" startOffset="6%">29.53°N 35.47°E  ◆  WADI RUM ↔ EMPTY QUARTER  ◆  24.12°N 55.32°E</textPath>
+        </text>
+        <circle cx="48" cy="48" r="32" fill="none" stroke="var(--border-lit)" stroke-width="0.5"/>
+        <g font-family="var(--font-data)" font-size="3.6" fill="var(--sand-dim)" letter-spacing="0.4" text-anchor="middle">
+          <text x="48" y="14">O · MALKAWI</text>
+          <text x="80" y="64">H · JAD ALLAH</text>
+          <text x="16" y="64">S · ALAJAMI</text>
+        </g>
+        <line x1="48" y1="22" x2="48" y2="30" stroke="var(--amber-dim)" stroke-width="0.6"/>
+        <line x1="48" y1="66" x2="48" y2="74" stroke="var(--amber-dim)" stroke-width="0.6"/>
+        <line x1="22" y1="48" x2="30" y2="48" stroke="var(--amber-dim)" stroke-width="0.6"/>
+        <line x1="66" y1="48" x2="74" y2="48" stroke="var(--amber-dim)" stroke-width="0.6"/>
+        <circle cx="48" cy="48" r="20" fill="var(--surface)" stroke="var(--amber-dim)" stroke-width="0.7"/>
+        <ellipse cx="48" cy="48" rx="14" ry="10" fill="none" stroke="var(--amber)" stroke-width="1.1"/>
+        <ellipse cx="48" cy="48" rx="5.5" ry="5.5" fill="var(--amber)" opacity="0.92"/>
+        <ellipse cx="48" cy="48" rx="2.4" ry="2.4" fill="var(--void)"/>
+        <line x1="32" y1="48" x2="36" y2="48" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="60" y1="48" x2="64" y2="48" stroke="var(--amber)" stroke-width="1"/>
+      </svg>
+
+      <!-- Wadi Rum silhouette -->
+      <svg width="100%" height="70" viewBox="0 0 400 70" preserveAspectRatio="none" style="display:block;">
+        <path d="M0 50 L40 30 L70 40 L100 20 L140 38 L170 22 L210 32 L240 18 L280 30 L320 16 L360 28 L400 22 L400 70 L0 70 Z" fill="var(--terra)" opacity="0.28"/>
+        <path d="M0 60 L40 45 L70 52 L100 38 L140 50 L170 42 L210 48 L240 36 L280 46 L320 32 L360 42 L400 38 L400 70 L0 70 Z" fill="var(--rust)" opacity="0.55"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · CAPSTONE DEFENSE · MAY 2026</span>
+    <span>01 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 2 — Brief Introduction
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 01 · Brief Introduction</span>
+    <span class="slide-counter">02 / 11 · WHAT IS GOLDENEYE</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> The system</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        An aerial human detector,<br/>
+        built specifically for the <em>desert</em>.
+      </h2>
+      <p class="lead mt-3">
+        GoldenEye takes a frame from a UAV camera, locates every person in it,
+        and streams annotated results to a command-centre interface — in a browser,
+        or fully offline on a Pi 5 with a Hailo-8L accelerator. No cloud round-trip,
+        no GPS dependency, no proprietary SDK.
+      </p>
+    </div>
+
+    <!-- 4 capability tiles -->
+    <div class="grid grid-4 mt-3">
+      <div class="card-amber">
+        <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">01 · Edge-capable</div>
+        <div class="h-display h4 mt-2">Offline by default</div>
+        <p class="body-text" style="font-size: 9.5pt; margin-top: 2mm;">
+          Pi 5 + Hailo-8L AI Kit. <strong style="color:var(--sand)">≥ 30 FPS</strong> target at 1080p
+          on an INT8-quantised ONNX export.
+        </p>
+      </div>
+      <div class="card-amber">
+        <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">02 · 4K-aware</div>
+        <div class="h-display h4 mt-2">SAHI tiling</div>
+        <p class="body-text" style="font-size: 9.5pt; margin-top: 2mm;">
+          Median target on 4K Shaheen imagery is <strong style="color:var(--sand)">68 px</strong>.
+          Tiled inference keeps targets above the model's receptive field.
+        </p>
+      </div>
+      <div class="card-amber">
+        <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">03 · Real-time</div>
+        <div class="h-display h4 mt-2">WS live stream</div>
+        <p class="body-text" style="font-size: 9.5pt; margin-top: 2mm;">
+          Bidirectional WebSocket with back-pressure (drop oldest, max 4 queued).
+          ByteTrack-style IDs persist across frames.
+        </p>
+      </div>
+      <div class="card-amber">
+        <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">04 · Open</div>
+        <div class="h-display h4 mt-2">Reproducible</div>
+        <p class="body-text" style="font-size: 9.5pt; margin-top: 2mm;">
+          Model card on HF Hub, Docker compose, 66 pytest tests,
+          CI to Vercel + Railway, MIT licence.
+        </p>
+      </div>
+    </div>
+
+    <!-- mini system flow -->
+    <div class="card mt-3" style="padding: 6mm 8mm;">
+      <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3mm;">
+        ◆ System at a glance
+      </div>
+      <svg width="100%" height="56" viewBox="0 0 1100 56">
+        <g font-family="var(--font-data)" font-size="11" fill="var(--sand)">
+          <!-- UAV -->
+          <g>
+            <rect x="0" y="14" width="120" height="28" fill="var(--surface)" stroke="var(--amber-dim)" rx="2"/>
+            <text x="60" y="32" text-anchor="middle" fill="var(--amber)">UAV / CAMERA</text>
+          </g>
+          <line x1="120" y1="28" x2="200" y2="28" stroke="var(--amber-dim)" stroke-width="1" stroke-dasharray="3 2"/>
+          <text x="160" y="22" text-anchor="middle" font-size="8" fill="var(--bronze)">frames</text>
+          <!-- API -->
+          <g>
+            <rect x="200" y="14" width="170" height="28" fill="var(--surface)" stroke="var(--amber-dim)" rx="2"/>
+            <text x="285" y="32" text-anchor="middle" fill="var(--amber)">FASTAPI · WS · CELERY</text>
+          </g>
+          <line x1="370" y1="28" x2="450" y2="28" stroke="var(--amber-dim)" stroke-width="1" stroke-dasharray="3 2"/>
+          <!-- Engine -->
+          <g>
+            <rect x="450" y="14" width="200" height="28" fill="var(--surface)" stroke="var(--amber-dim)" rx="2"/>
+            <text x="550" y="32" text-anchor="middle" fill="var(--amber)">ONNX · SAHI · TRACKER</text>
+          </g>
+          <line x1="650" y1="28" x2="730" y2="28" stroke="var(--amber-dim)" stroke-width="1" stroke-dasharray="3 2"/>
+          <text x="690" y="22" text-anchor="middle" font-size="8" fill="var(--bronze)">JSON</text>
+          <!-- Frontend -->
+          <g>
+            <rect x="730" y="14" width="170" height="28" fill="var(--surface)" stroke="var(--amber-dim)" rx="2"/>
+            <text x="815" y="32" text-anchor="middle" fill="var(--amber)">NEXT.JS 16 / OPERATOR</text>
+          </g>
+          <line x1="900" y1="28" x2="980" y2="28" stroke="var(--amber-dim)" stroke-width="1" stroke-dasharray="3 2"/>
+          <!-- Edge alt -->
+          <g>
+            <rect x="980" y="14" width="120" height="28" fill="var(--surface)" stroke="var(--terra)" rx="2"/>
+            <text x="1040" y="32" text-anchor="middle" fill="var(--terra)">Pi 5 + HAILO</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · BRIEF INTRODUCTION</span>
+    <span>02 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 3 — Motivation
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 02 · Motivation</span>
+    <span class="slide-counter">03 / 11 · WHY SAR DETECTION</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> The desert is a hostile detector</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        Every minute matters,<br/>
+        and <em>every degree of contrast</em> hides a body.
+      </h2>
+    </div>
+
+    <div class="grid grid-2" style="gap: 5mm; flex: 1 1 auto; min-height: 0;">
+      <!-- Left: 3 statistics -->
+      <div class="flex col" style="gap: 3mm;">
+        <div class="stat-block">
+          <div><span class="stat">~96</span><span class="stat-unit">hours</span></div>
+          <div class="stat-label">Median survival in 45°C heat</div>
+          <div class="stat-note">
+            For an adult without water in UAE / Wadi Rum summer conditions.
+            Every hour after disappearance squares the radius the team must sweep.
+          </div>
+        </div>
+        <div class="stat-block">
+          <div><span class="stat">3,000+</span><span class="stat-unit">km²</span></div>
+          <div class="stat-label">Typical UAE Empty-Quarter sweep area</div>
+          <div class="stat-note">
+            A single trained dog handler + spotter covers ~10 km²/day.
+            A 4K UAV at 95 m altitude covers <strong style="color:var(--sand)">~80×</strong> more.
+          </div>
+        </div>
+        <div class="stat-block">
+          <div><span class="stat">68</span><span class="stat-unit">px</span></div>
+          <div class="stat-label">Median target size on Shaheen 4K</div>
+          <div class="stat-note">
+            A standing person at 50 m altitude is roughly 68×67 px in a 3840×2160 frame.
+            After a single 640-letterbox that's <strong style="color:var(--sand)">11 px</strong>
+            — below most detectors' receptive field.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: framing quote + topo backdrop -->
+      <div class="flex col" style="gap: 3mm; justify-content: space-between;">
+        <div class="card-paper">
+          <div style="border-bottom: 1px dashed oklch(0.7 0.02 70); padding-bottom: 2mm; margin-bottom: 3mm; display: flex; justify-content: space-between; font-size: 8pt; color: oklch(0.4 0.015 60); letter-spacing: 0.04em;">
+            <span>FRAMING</span>
+            <span>FORM GE-MOT/01</span>
+          </div>
+          <p style="margin: 0;">
+            Shaheen (AUS) solved the easy half of SAR detection — UAE desert, low altitude,
+            clear sky. We start from there and ask the harder operational questions:
+            <em>does it still work in a different country, from higher up, through a
+            degraded sensor, on a battery-powered Pi?</em>
+          </p>
+          <p style="margin-top: 3mm;">
+            None of those questions can be answered with another accuracy number.
+            They need an altitude curve, a degradation curve, a cross-environment matrix —
+            and a deployable system to run them on.
+          </p>
+        </div>
+
+        <div class="card" style="border-left: 3px solid var(--terra); padding: 4mm 5mm;">
+          <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">
+            ◆ Operational consequence
+          </div>
+          <div class="h-display h4 mt-2" style="font-weight: 500;">
+            A 12-second false-negative on a UAV pass<br/>
+            is the difference between a rescue and a recovery.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · MOTIVATION</span>
+    <span>03 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 4 — Problem Statement
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 02 · Problem Statement</span>
+    <span class="slide-counter">04 / 11 · THREE FAILURE MODES</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> What current SAR detection gets wrong</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        Three failure modes,<br/>
+        <em>three things we had to solve.</em>
+      </h2>
+    </div>
+
+    <!-- 3 dossier cards -->
+    <div class="grid grid-3 mt-3" style="gap: 6mm;">
+      <!-- Card 1 -->
+      <div class="card" style="display:flex; flex-direction: column; gap: 3mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 2mm;">
+          <span class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em;">PROBLEM-01</span>
+          <span class="badge badge-terra">SMALL OBJECT</span>
+        </div>
+        <!-- Diagram: 4K image → letterbox shows tiny target -->
+        <svg width="100%" height="56" viewBox="0 0 240 56">
+          <rect x="2" y="6" width="100" height="44" fill="var(--surface)" stroke="var(--amber-dim)" stroke-width="0.6"/>
+          <text x="52" y="20" text-anchor="middle" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">3840×2160</text>
+          <rect x="56" y="26" width="6" height="10" fill="var(--amber)"/>
+          <text x="56" y="48" text-anchor="middle" font-family="var(--font-data)" font-size="5.5" fill="var(--sand-dim)">68 px target</text>
+          <line x1="106" y1="28" x2="138" y2="28" stroke="var(--bronze)" stroke-dasharray="2 2"/>
+          <text x="122" y="22" text-anchor="middle" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">letterbox</text>
+          <rect x="142" y="6" width="96" height="44" fill="var(--surface)" stroke="var(--amber-dim)" stroke-width="0.6"/>
+          <text x="190" y="20" text-anchor="middle" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">640×640</text>
+          <rect x="187" y="32" width="2" height="3" fill="var(--amber)"/>
+          <text x="190" y="48" text-anchor="middle" font-family="var(--font-data)" font-size="5.5" fill="var(--terra)">11 px · invisible</text>
+        </svg>
+        <div class="h-display h4">Targets too small for the receptive field</div>
+        <p class="body-text" style="font-size: 10pt;">
+          A 640-letterbox of a 4K aerial frame shrinks the median person to ~11×11 px.
+          That's below where YOLOv8n can reliably activate anchors.
+        </p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="card" style="display:flex; flex-direction: column; gap: 3mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 2mm;">
+          <span class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em;">PROBLEM-02</span>
+          <span class="badge badge-terra">SENSOR DEGRADATION</span>
+        </div>
+        <!-- Diagram: clean → degraded -->
+        <svg width="100%" height="56" viewBox="0 0 240 56">
+          <defs>
+            <pattern id="noise" patternUnits="userSpaceOnUse" width="3" height="3">
+              <rect width="3" height="3" fill="var(--surface)"/>
+              <circle cx="1" cy="1" r="0.4" fill="var(--bronze-dim)"/>
+            </pattern>
+            <linearGradient id="haze" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="var(--amber-dim)" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="var(--amber-dim)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="6" width="70" height="44" fill="var(--surface)" stroke="var(--amber-dim)" stroke-width="0.6"/>
+          <rect x="32" y="22" width="6" height="12" fill="var(--amber)"/>
+          <text x="37" y="48" text-anchor="middle" font-family="var(--font-data)" font-size="5.5" fill="var(--sand-dim)">clean</text>
+          <text x="80" y="32" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">▶</text>
+          <rect x="92" y="6" width="70" height="44" fill="url(#noise)" stroke="var(--amber-dim)" stroke-width="0.6"/>
+          <rect x="122" y="22" width="6" height="12" fill="var(--amber)" opacity="0.6"/>
+          <rect x="92" y="6" width="70" height="44" fill="url(#haze)"/>
+          <text x="127" y="48" text-anchor="middle" font-family="var(--font-data)" font-size="5.5" fill="var(--terra)">heat-haze + noise</text>
+          <text x="170" y="32" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">▶</text>
+          <rect x="182" y="6" width="50" height="44" fill="var(--surface)" stroke="var(--amber-dim)" stroke-width="0.6"/>
+          <text x="207" y="32" text-anchor="middle" font-family="var(--font-data)" font-size="6" fill="var(--terra)">→ −12pp mAP</text>
+        </svg>
+        <div class="h-display h4">Models trained clean break in the field</div>
+        <p class="body-text" style="font-size: 10pt;">
+          Motion blur, JPEG compression, heat-haze and glare strip ~12pp from
+          a model that was never trained against them.
+        </p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="card" style="display:flex; flex-direction: column; gap: 3mm;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 2mm;">
+          <span class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em;">PROBLEM-03</span>
+          <span class="badge badge-terra">EDGE DEPLOYMENT</span>
+        </div>
+        <!-- Diagram: cloud crossed out, pi up -->
+        <svg width="100%" height="56" viewBox="0 0 240 56">
+          <ellipse cx="50" cy="22" rx="30" ry="12" fill="none" stroke="var(--sand-faint)" stroke-width="1.4"/>
+          <line x1="22" y1="10" x2="78" y2="34" stroke="var(--terra)" stroke-width="2"/>
+          <text x="50" y="48" text-anchor="middle" font-family="var(--font-data)" font-size="6" fill="var(--sand-faint)">no cloud</text>
+          <text x="98" y="32" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">▶</text>
+          <rect x="115" y="14" width="40" height="28" fill="var(--surface)" stroke="var(--amber)" rx="2"/>
+          <rect x="120" y="20" width="30" height="16" fill="var(--card-raised)" stroke="var(--border-lit)"/>
+          <text x="135" y="48" text-anchor="middle" font-family="var(--font-data)" font-size="6" fill="var(--amber)">Pi 5 + Hailo</text>
+          <text x="175" y="20" font-family="var(--font-data)" font-size="7" fill="var(--amber)">30 FPS</text>
+          <text x="175" y="32" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">&lt; 5 W avg</text>
+          <text x="175" y="44" font-family="var(--font-data)" font-size="6" fill="var(--bronze)">~13 TOPS</text>
+        </svg>
+        <div class="h-display h4">No cloud, no GPS, no warm room</div>
+        <p class="body-text" style="font-size: 10pt;">
+          A field UAV operates without LTE, on a 5–8 W power budget, at temperatures
+          that throttle most accelerators. The target is a Pi 5 + Hailo-8L AI Kit.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · PROBLEM STATEMENT</span>
+    <span>04 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 5 — Our Work / Application Idea
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 03 · Our Work</span>
+    <span class="slide-counter">05 / 11 · THE APPLICATION</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> A full-stack solution</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        From a UAV camera to an <em>operator's screen</em><br/>
+        in <span style="color:var(--sand)">under 100&nbsp;ms</span>.
+      </h2>
+    </div>
+
+    <!-- Architecture diagram -->
+    <div class="card" style="padding: 5mm 6mm; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-top: 1mm;">
+      <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4mm;">
+        ◆ System architecture
+      </div>
+
+      <svg width="100%" height="100%" viewBox="0 0 1100 360" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 Z" fill="var(--amber-dim)"/>
+          </marker>
+          <marker id="arr-t" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 Z" fill="var(--terra)"/>
+          </marker>
+        </defs>
+
+        <!-- COLUMN 1: Source -->
+        <g font-family="var(--font-data)" font-size="11">
+          <rect x="20" y="120" width="160" height="50" fill="var(--surface)" stroke="var(--amber)" rx="3"/>
+          <text x="100" y="142" text-anchor="middle" fill="var(--amber)" font-weight="700">UAV CAMERA</text>
+          <text x="100" y="158" text-anchor="middle" fill="var(--sand-dim)" font-size="8.5">4K · 15 FPS · H.264</text>
+
+          <rect x="20" y="200" width="160" height="50" fill="var(--surface)" stroke="var(--amber-dim)" rx="3" stroke-dasharray="3 2"/>
+          <text x="100" y="222" text-anchor="middle" fill="var(--bronze)" font-weight="700">SCREEN / WEBCAM</text>
+          <text x="100" y="238" text-anchor="middle" fill="var(--sand-dim)" font-size="8.5">browser demo input</text>
+
+          <rect x="20" y="280" width="160" height="50" fill="var(--surface)" stroke="var(--amber-dim)" rx="3" stroke-dasharray="3 2"/>
+          <text x="100" y="302" text-anchor="middle" fill="var(--bronze)" font-weight="700">/SIM BROWSER</text>
+          <text x="100" y="318" text-anchor="middle" fill="var(--sand-dim)" font-size="8.5">lawnmower · spiral</text>
+        </g>
+
+        <!-- arrows to API -->
+        <line x1="180" y1="145" x2="290" y2="170" stroke="var(--amber-dim)" stroke-width="1.4" marker-end="url(#arr)"/>
+        <line x1="180" y1="225" x2="290" y2="195" stroke="var(--amber-dim)" stroke-width="1.4" marker-end="url(#arr)"/>
+        <line x1="180" y1="305" x2="290" y2="220" stroke="var(--amber-dim)" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="235" y="155" font-family="var(--font-data)" font-size="8" fill="var(--bronze)" letter-spacing="0.06em">JPEG / WS</text>
+
+        <!-- COLUMN 2: API -->
+        <g font-family="var(--font-data)" font-size="11">
+          <rect x="295" y="80" width="240" height="240" fill="var(--card-bg)" stroke="var(--amber-dim)" rx="4"/>
+          <text x="415" y="98" text-anchor="middle" fill="var(--amber)" font-weight="700" font-size="10">FASTAPI · UVICORN</text>
+          <line x1="305" y1="105" x2="525" y2="105" stroke="var(--border)"/>
+
+          <rect x="310" y="115" width="210" height="30" fill="var(--surface)" stroke="var(--border-lit)" rx="2"/>
+          <text x="415" y="133" text-anchor="middle" fill="var(--sand)" font-size="9">/api/detect/image · ?mode=sahi</text>
+
+          <rect x="310" y="150" width="210" height="30" fill="var(--surface)" stroke="var(--border-lit)" rx="2"/>
+          <text x="415" y="168" text-anchor="middle" fill="var(--sand)" font-size="9">/api/detect/video → Celery</text>
+
+          <rect x="310" y="185" width="210" height="30" fill="var(--surface)" stroke="var(--border-lit)" rx="2"/>
+          <text x="415" y="203" text-anchor="middle" fill="var(--sand)" font-size="9">/ws/live · ByteTrack IDs</text>
+
+          <rect x="310" y="220" width="210" height="30" fill="var(--surface)" stroke="var(--border-lit)" rx="2"/>
+          <text x="415" y="238" text-anchor="middle" fill="var(--sand)" font-size="9">/api/jobs/{id}/result.mp4|.csv</text>
+
+          <rect x="310" y="260" width="100" height="40" fill="var(--surface)" stroke="var(--border-lit)" rx="2"/>
+          <text x="360" y="278" text-anchor="middle" fill="var(--bronze)" font-size="8.5">REDIS</text>
+          <text x="360" y="292" text-anchor="middle" fill="var(--sand-dim)" font-size="7.5">broker · TTL</text>
+
+          <rect x="420" y="260" width="100" height="40" fill="var(--surface)" stroke="var(--border-lit)" rx="2"/>
+          <text x="470" y="278" text-anchor="middle" fill="var(--bronze)" font-size="8.5">PROMETHEUS</text>
+          <text x="470" y="292" text-anchor="middle" fill="var(--sand-dim)" font-size="7.5">latency · req/s</text>
+        </g>
+
+        <line x1="535" y1="200" x2="615" y2="200" stroke="var(--amber-dim)" stroke-width="1.4" marker-end="url(#arr)"/>
+
+        <!-- COLUMN 3: Engine -->
+        <g font-family="var(--font-data)" font-size="11">
+          <rect x="620" y="120" width="220" height="160" fill="var(--card-bg)" stroke="var(--amber)" rx="4"/>
+          <text x="730" y="140" text-anchor="middle" fill="var(--amber)" font-weight="700" font-size="10">INFERENCE ENGINE</text>
+          <line x1="630" y1="148" x2="830" y2="148" stroke="var(--border)"/>
+          <text x="640" y="166" fill="var(--sand)" font-size="9.5">▸ ONNX Runtime · CPU / GPU</text>
+          <text x="640" y="184" fill="var(--sand)" font-size="9.5">▸ SAHI tiled predictor</text>
+          <text x="640" y="202" fill="var(--sand)" font-size="9.5">▸ IoU tracker · stable T-IDs</text>
+          <text x="640" y="220" fill="var(--sand)" font-size="9.5">▸ Temperature calibration</text>
+          <text x="640" y="238" fill="var(--sand)" font-size="9.5">▸ best.onnx · mAP 0.979</text>
+          <text x="640" y="262" fill="var(--bronze)" font-size="8.5">42 ms / frame · 640 letterbox</text>
+        </g>
+
+        <line x1="840" y1="200" x2="920" y2="200" stroke="var(--amber-dim)" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="880" y="190" text-anchor="middle" font-family="var(--font-data)" font-size="8" fill="var(--bronze)">JSON</text>
+
+        <!-- COLUMN 4: Frontend / Operator -->
+        <g font-family="var(--font-data)" font-size="11">
+          <rect x="925" y="80" width="155" height="50" fill="var(--surface)" stroke="var(--amber)" rx="3"/>
+          <text x="1002" y="100" text-anchor="middle" fill="var(--amber)" font-weight="700">NEXT.JS 16</text>
+          <text x="1002" y="116" text-anchor="middle" fill="var(--sand-dim)" font-size="8.5">App Router · RSC</text>
+
+          <rect x="925" y="142" width="155" height="50" fill="var(--surface)" stroke="var(--amber-dim)" rx="3"/>
+          <text x="1002" y="162" text-anchor="middle" fill="var(--amber)" font-weight="700">OPERATOR UI</text>
+          <text x="1002" y="178" text-anchor="middle" fill="var(--sand-dim)" font-size="8.5">image · video · live · sim</text>
+
+          <rect x="925" y="204" width="155" height="50" fill="var(--surface)" stroke="var(--amber-dim)" rx="3"/>
+          <text x="1002" y="224" text-anchor="middle" fill="var(--amber)" font-weight="700">MISSION MAP</text>
+          <text x="1002" y="240" text-anchor="middle" fill="var(--sand-dim)" font-size="8.5">Mapbox · KML export</text>
+
+          <rect x="925" y="266" width="155" height="50" fill="var(--surface)" stroke="var(--terra)" rx="3" stroke-dasharray="3 2"/>
+          <text x="1002" y="286" text-anchor="middle" fill="var(--terra)" font-weight="700">PI 5 + HAILO</text>
+          <text x="1002" y="302" text-anchor="middle" fill="var(--sand-dim)" font-size="8.5">edge alternate path</text>
+        </g>
+
+        <!-- alt edge arrow from API to Pi (curved) -->
+        <path d="M 535 290 C 700 360 850 360 925 295" stroke="var(--terra)" stroke-width="1.4" stroke-dasharray="3 3" fill="none" marker-end="url(#arr-t)"/>
+        <text x="730" y="350" font-family="var(--font-data)" font-size="8" fill="var(--terra)" letter-spacing="0.06em">.hef · int8</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · APPLICATION IDEA</span>
+    <span>05 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 6 — Demo / Results
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 04 · Demo</span>
+    <span class="slide-counter">06 / 11 · LIVE ON THE WEBSITE</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> What you can run today</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        Four modes,<br/>
+        <em>one detection pipeline.</em>
+      </h2>
+    </div>
+
+    <div class="grid grid-2 mt-3" style="gap: 5mm; flex: 1 1 auto; min-height: 0;">
+
+      <!-- Big mockup -->
+      <div class="card corners" style="padding: 0; overflow: hidden; position: relative;">
+        <span class="corner-bl"></span><span class="corner-br"></span>
+        <!-- Mock UAV view -->
+        <div style="position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg, oklch(0.42 0.04 70) 0%, oklch(0.55 0.07 65) 100%); overflow: hidden;">
+          <!-- "Dunes" -->
+          <svg style="position: absolute; inset:0; width: 100%; height: 100%;" viewBox="0 0 400 225" preserveAspectRatio="none">
+            <path d="M0 130 Q60 110 120 130 T240 130 T360 130 L400 130 L400 225 L0 225 Z" fill="oklch(0.38 0.045 65)" opacity="0.6"/>
+            <path d="M0 160 Q70 140 140 160 T280 160 T400 160 L400 225 L0 225 Z" fill="oklch(0.33 0.04 60)" opacity="0.75"/>
+            <path d="M0 195 Q80 175 160 195 T320 195 T400 195 L400 225 L0 225 Z" fill="oklch(0.22 0.025 55)"/>
+          </svg>
+          <!-- Detection overlays -->
+          <svg style="position: absolute; inset: 0; width: 100%; height: 100%;" viewBox="0 0 400 225">
+            <!-- Detection 1 -->
+            <g>
+              <line x1="160" y1="124" x2="160" y2="118" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="160" y1="118" x2="166" y2="118" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="174" y1="118" x2="180" y2="118" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="180" y1="118" x2="180" y2="124" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="180" y1="138" x2="180" y2="144" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="180" y1="144" x2="174" y2="144" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="166" y1="144" x2="160" y2="144" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="160" y1="144" x2="160" y2="138" stroke="var(--amber)" stroke-width="1.5"/>
+              <rect x="160" y="107" width="42" height="10" fill="oklch(0.08 0.008 54 / 0.85)" stroke="var(--amber-dim)" stroke-width="0.4"/>
+              <text x="164" y="114" font-family="var(--font-data)" font-size="6" fill="var(--amber)" font-weight="700">T7 · 94%</text>
+            </g>
+            <!-- Detection 2 -->
+            <g>
+              <line x1="240" y1="156" x2="240" y2="150" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="240" y1="150" x2="246" y2="150" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="254" y1="150" x2="260" y2="150" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="260" y1="150" x2="260" y2="156" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="260" y1="170" x2="260" y2="176" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="260" y1="176" x2="254" y2="176" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="246" y1="176" x2="240" y2="176" stroke="var(--amber)" stroke-width="1.5"/>
+              <line x1="240" y1="176" x2="240" y2="170" stroke="var(--amber)" stroke-width="1.5"/>
+              <rect x="240" y="139" width="42" height="10" fill="oklch(0.08 0.008 54 / 0.85)" stroke="var(--amber-dim)" stroke-width="0.4"/>
+              <text x="244" y="146" font-family="var(--font-data)" font-size="6" fill="var(--amber)" font-weight="700">T9 · 88%</text>
+            </g>
+            <!-- LIVE badge -->
+            <rect x="6" y="6" width="34" height="11" fill="oklch(0.08 0.008 54 / 0.85)" stroke="var(--terra)" rx="5.5"/>
+            <circle cx="12" cy="11.5" r="2" fill="var(--terra)"/>
+            <text x="18" y="14" font-family="var(--font-data)" font-size="6" fill="var(--terra)" letter-spacing="0.08em">LIVE</text>
+            <!-- HUD bar bottom -->
+            <rect x="0" y="208" width="400" height="17" fill="oklch(0.08 0.008 54 / 0.78)"/>
+            <text x="6" y="219" font-family="var(--font-data)" font-size="6" fill="var(--amber-bright)" letter-spacing="0.06em">
+              ALT 50m · FRAME 0124/0840 · FPS 6.4 · DETS 2 · GoldenEye · YOLOv8n
+            </text>
+            <text x="296" y="219" font-family="var(--font-data)" font-size="5.5" fill="var(--sand-faint)" letter-spacing="0.06em">best.onnx · CPU</text>
+            <!-- Progress ribbon -->
+            <rect x="0" y="0" width="60" height="1.5" fill="var(--amber)"/>
+          </svg>
+        </div>
+        <div style="padding: 4mm 6mm; background: var(--surface); border-top: 1px solid var(--border);">
+          <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">/live · screen-share detection</div>
+          <div style="font-size: 11pt; color: var(--sand); margin-top: 1.5mm;">Share your screen or webcam; each frame round-trips through <code style="color: var(--amber);">/ws/live</code> at ~8–15 FPS with stable track IDs.</div>
+        </div>
+      </div>
+
+      <!-- 3 mode tiles + edge tile -->
+      <div class="grid grid-2" style="gap: 4mm;">
+        <div class="card-amber" style="padding: 3.5mm 4.5mm;">
+          <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">MODE-01 · /detect/image</div>
+          <div class="h-display h4 mt-2">Single frame</div>
+          <p class="body-text" style="font-size: 9.5pt; margin-top: 1.5mm;">
+            Drag-drop any image. Choose <strong style="color:var(--amber)">full</strong> or
+            <strong style="color:var(--amber)">SAHI</strong>. Returns annotated JPEG + JSON.
+          </p>
+          <div class="badge badge-amber mt-2">&lt; 100 ms</div>
+        </div>
+
+        <div class="card-amber" style="padding: 3.5mm 4.5mm;">
+          <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">MODE-02 · /detect/video</div>
+          <div class="h-display h4 mt-2">Async pipeline</div>
+          <p class="body-text" style="font-size: 9.5pt; margin-top: 1.5mm;">
+            Celery job. Frame-by-frame inference, annotated MP4 + detection CSV
+            written to disk; SSE progress to the operator.
+          </p>
+          <div class="badge badge-amber mt-2">Celery · Redis</div>
+        </div>
+
+        <div class="card-amber" style="padding: 3.5mm 4.5mm;">
+          <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">MODE-03 · /live</div>
+          <div class="h-display h4 mt-2">Screen / webcam</div>
+          <p class="body-text" style="font-size: 9.5pt; margin-top: 1.5mm;">
+            Share your screen or webcam; frames stream over WS at 8–15 Hz.
+            Track IDs persist across frames.
+          </p>
+          <div class="badge badge-amber mt-2">WebSocket</div>
+        </div>
+
+        <div class="card-amber" style="padding: 3.5mm 4.5mm; border-top: 2px solid var(--terra);">
+          <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">EDGE · Pi 5 + Hailo</div>
+          <div class="h-display h4 mt-2">Offline operator</div>
+          <p class="body-text" style="font-size: 9.5pt; margin-top: 1.5mm;">
+            Same model, INT8-quantised to a <code style="color:var(--amber)">.hef</code> binary.
+            30 FPS on a Pi 5 with the Hailo-8L M.2 HAT+, fully offline.
+          </p>
+          <div class="badge badge-amber mt-2">~4.2 W · field box</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · DEMO</span>
+    <span>06 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 7 — Performance: headline numbers
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 05 · Performance</span>
+    <span class="slide-counter">07 / 11 · HEADLINE NUMBERS</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> Production model · best.onnx</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        <em>97.9%</em> mAP@0.5<br/>
+        on Shaheen test split.
+      </h2>
+    </div>
+
+    <div class="grid grid-4 mt-3">
+      <div class="metric">
+        <div class="value">0.979</div>
+        <div class="label">mAP@0.5</div>
+        <div class="sub">held-out Shaheen real test</div>
+      </div>
+      <div class="metric">
+        <div class="value">97.5%</div>
+        <div class="label">Precision</div>
+        <div class="sub">conf ≥ 0.25</div>
+      </div>
+      <div class="metric">
+        <div class="value">98.5%</div>
+        <div class="label">Recall</div>
+        <div class="sub">conf ≥ 0.25</div>
+      </div>
+      <div class="metric">
+        <div class="value">42 ms</div>
+        <div class="label">Inference latency</div>
+        <div class="sub">CPU ONNX Runtime</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2 mt-3" style="gap: 5mm; flex: 1 1 auto; min-height: 0;">
+      <!-- Altitude curve chart -->
+      <div class="card" style="display: flex; flex-direction: column;">
+        <div style="display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 3mm;">
+          <div>
+            <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">◆ Altitude robustness</div>
+            <div class="h-display h4 mt-1">mAP vs. drone altitude</div>
+          </div>
+          <span class="badge badge-bronze">Shaheen synth · 8 alts</span>
+        </div>
+        <svg width="100%" height="100%" viewBox="0 0 400 170" preserveAspectRatio="xMidYMid meet" style="flex:1;">
+          <!-- grid -->
+          <g stroke="var(--border)" stroke-dasharray="2 4" stroke-width="0.6">
+            <line x1="40" y1="20" x2="380" y2="20"/>
+            <line x1="40" y1="60" x2="380" y2="60"/>
+            <line x1="40" y1="100" x2="380" y2="100"/>
+            <line x1="40" y1="140" x2="380" y2="140"/>
+          </g>
+          <!-- y labels -->
+          <g font-family="var(--font-data)" font-size="7" fill="var(--sand-faint)">
+            <text x="30" y="23" text-anchor="end">1.0</text>
+            <text x="30" y="63" text-anchor="end">0.8</text>
+            <text x="30" y="103" text-anchor="end">0.6</text>
+            <text x="30" y="143" text-anchor="end">0.4</text>
+          </g>
+          <!-- x labels -->
+          <g font-family="var(--font-data)" font-size="7" fill="var(--sand-faint)">
+            <text x="40" y="158" text-anchor="middle">20</text>
+            <text x="92" y="158" text-anchor="middle">30</text>
+            <text x="144" y="158" text-anchor="middle">40</text>
+            <text x="196" y="158" text-anchor="middle">50</text>
+            <text x="248" y="158" text-anchor="middle">60</text>
+            <text x="300" y="158" text-anchor="middle">70</text>
+            <text x="350" y="158" text-anchor="middle">80m</text>
+          </g>
+          <!-- Full-frame curve -->
+          <polyline
+            points="40,22 92,24 144,26 196,30 248,38 300,50 350,72"
+            stroke="var(--amber)" stroke-width="2" fill="none"
+          />
+          <g fill="var(--amber)">
+            <circle cx="40" cy="22" r="2.5"/>
+            <circle cx="92" cy="24" r="2.5"/>
+            <circle cx="144" cy="26" r="2.5"/>
+            <circle cx="196" cy="30" r="2.5"/>
+            <circle cx="248" cy="38" r="2.5"/>
+            <circle cx="300" cy="50" r="2.5"/>
+            <circle cx="350" cy="72" r="2.5"/>
+          </g>
+          <!-- SAHI curve -->
+          <polyline
+            points="40,20 92,22 144,22 196,24 248,28 300,32 350,42"
+            stroke="var(--success)" stroke-width="2" fill="none" stroke-dasharray="4 2"
+          />
+          <g fill="var(--success)">
+            <circle cx="40" cy="20" r="2.2"/>
+            <circle cx="92" cy="22" r="2.2"/>
+            <circle cx="144" cy="22" r="2.2"/>
+            <circle cx="196" cy="24" r="2.2"/>
+            <circle cx="248" cy="28" r="2.2"/>
+            <circle cx="300" cy="32" r="2.2"/>
+            <circle cx="350" cy="42" r="2.2"/>
+          </g>
+          <!-- legend -->
+          <g font-family="var(--font-data)" font-size="7.5">
+            <line x1="240" y1="14" x2="252" y2="14" stroke="var(--amber)" stroke-width="2"/>
+            <text x="256" y="17" fill="var(--sand)">full-frame</text>
+            <line x1="298" y1="14" x2="310" y2="14" stroke="var(--success)" stroke-width="2" stroke-dasharray="3 2"/>
+            <text x="314" y="17" fill="var(--sand)">SAHI tiled</text>
+          </g>
+          <!-- annotation -->
+          <text x="350" y="92" font-family="var(--font-data)" font-size="7.5" fill="var(--terra)" text-anchor="end">+30pp recovery @ 80m</text>
+        </svg>
+        <p style="font-size: 9pt; color: var(--sand-dim); margin-top: 2mm;">
+          The drop above 60 m is the small-object regime. SAHI tiling
+          recovers up to <strong style="color: var(--amber)">~30pp</strong> at high altitudes.
+        </p>
+      </div>
+
+      <!-- Degradation -->
+      <div class="card" style="display: flex; flex-direction: column;">
+        <div style="display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 3mm;">
+          <div>
+            <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">◆ Degradation robustness</div>
+            <div class="h-display h4 mt-1">With vs. without synth</div>
+          </div>
+          <span class="badge badge-bronze">Shaheen synth</span>
+        </div>
+        <svg width="100%" height="100%" viewBox="0 0 400 170" preserveAspectRatio="xMidYMid meet" style="flex:1;">
+          <g stroke="var(--border)" stroke-dasharray="2 4" stroke-width="0.6">
+            <line x1="40" y1="20" x2="380" y2="20"/>
+            <line x1="40" y1="60" x2="380" y2="60"/>
+            <line x1="40" y1="100" x2="380" y2="100"/>
+            <line x1="40" y1="140" x2="380" y2="140"/>
+          </g>
+          <g font-family="var(--font-data)" font-size="7" fill="var(--sand-faint)">
+            <text x="30" y="23" text-anchor="end">1.0</text>
+            <text x="30" y="60" text-anchor="end">0.9</text>
+            <text x="30" y="100" text-anchor="end">0.8</text>
+            <text x="30" y="140" text-anchor="end">0.7</text>
+          </g>
+          <!-- 4 groups, 2 bars each -->
+          <g>
+            <!-- None -->
+            <rect x="60" y="20" width="22" height="120" fill="var(--amber)"/>
+            <rect x="86" y="32" width="22" height="108" fill="var(--sand-faint)"/>
+            <text x="84" y="158" text-anchor="middle" font-family="var(--font-data)" font-size="7" fill="var(--sand-dim)">None</text>
+            <!-- Low -->
+            <rect x="135" y="24" width="22" height="116" fill="var(--amber)"/>
+            <rect x="161" y="40" width="22" height="100" fill="var(--sand-faint)"/>
+            <text x="159" y="158" text-anchor="middle" font-family="var(--font-data)" font-size="7" fill="var(--sand-dim)">Low</text>
+            <!-- Moderate -->
+            <rect x="210" y="34" width="22" height="106" fill="var(--amber)"/>
+            <rect x="236" y="64" width="22" height="76" fill="var(--sand-faint)"/>
+            <text x="234" y="158" text-anchor="middle" font-family="var(--font-data)" font-size="7" fill="var(--sand-dim)">Moderate</text>
+            <!-- Severe -->
+            <rect x="285" y="64" width="22" height="76" fill="var(--amber)"/>
+            <rect x="311" y="118" width="22" height="22" fill="var(--sand-faint)"/>
+            <text x="309" y="158" text-anchor="middle" font-family="var(--font-data)" font-size="7" fill="var(--sand-dim)">Severe</text>
+          </g>
+          <!-- legend -->
+          <g font-family="var(--font-data)" font-size="7.5">
+            <rect x="240" y="6" width="10" height="8" fill="var(--amber)"/>
+            <text x="254" y="13" fill="var(--sand)">with synth</text>
+            <rect x="308" y="6" width="10" height="8" fill="var(--sand-faint)"/>
+            <text x="322" y="13" fill="var(--sand)">no synth</text>
+          </g>
+        </svg>
+        <p style="font-size: 9pt; color: var(--sand-dim); margin-top: 2mm;">
+          Synthetic-data training buys <strong style="color: var(--amber)">+3pp</strong> at low degradation
+          and <strong style="color: var(--amber)">+12pp</strong> at severe. The synthetic split earned its keep.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · PERFORMANCE</span>
+    <span>07 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 8 — Cross-domain matrix (the novelty)
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 05b · Cross-Domain Evaluation</span>
+    <span class="slide-counter">08 / 11 · THE SCIENTIFIC NOVELTY</span>
+  </div>
+
+  <div class="slide-body">
+    <div style="position: relative;">
+      <span class="eyebrow"><span class="diamond">◆</span> Beyond UAE imagery</span>
+      <h2 class="h-display h2" style="margin-top: 3mm; max-width: 30ch;">
+        Train-on / test-on matrix —<br/>
+        <em>the experiment Shaheen never ran</em>.
+      </h2>
+
+      <!-- VERIFIED stamp -->
+      <div class="stamp-wrap" style="top: 4mm; right: 4mm;">
+        <svg width="120" height="50" viewBox="0 0 248 104">
+          <defs>
+            <filter id="rag" x="-5%" y="-5%" width="110%" height="110%">
+              <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="2" seed="3"/>
+              <feDisplacementMap in="SourceGraphic" scale="1.4"/>
+            </filter>
+          </defs>
+          <g filter="url(#rag)" stroke="var(--rust)" fill="none">
+            <rect x="6" y="8" width="236" height="88" rx="3" stroke-width="3" stroke-dasharray="320 8 2 4"/>
+            <rect x="14" y="16" width="220" height="72" rx="2" stroke-width="1.2"/>
+          </g>
+          <text x="124" y="58" text-anchor="middle" font-family="var(--font-display)" font-weight="700" font-size="32" fill="var(--rust)" opacity="0.92" letter-spacing="0.12em" filter="url(#rag)">VERIFIED</text>
+          <text x="124" y="80" text-anchor="middle" font-family="var(--font-data)" font-size="8" fill="var(--rust)" opacity="0.7" letter-spacing="0.3em" filter="url(#rag)">GE/2026 · NB12</text>
+        </svg>
+      </div>
+    </div>
+
+    <p class="lead" style="max-width: 80ch;">
+      The diagonal cells are basic in-domain competence. The <strong style="color:var(--amber)">off-diagonal</strong>
+      cells — train on Croatia forest, test on UAE desert and vice versa — are how we show the model
+      learned <em>"person from above"</em> rather than <em>"orange sand"</em>.
+    </p>
+
+    <div class="card mt-3" style="flex: 1 1 auto; display:flex; flex-direction: column;">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th style="text-align: left;">Train ↓ / Test →</th>
+            <th>SARD test</th>
+            <th>HERIDAL test<br/><span style="color: var(--sand-faint); font-weight: 400; text-transform: none; letter-spacing: 0.04em;">forest</span></th>
+            <th>Shaheen real test<br/><span style="color: var(--sand-faint); font-weight: 400; text-transform: none; letter-spacing: 0.04em;">UAE 4K</span></th>
+            <th>Doron test<br/><span style="color: var(--sand-faint); font-weight: 400; text-transform: none; letter-spacing: 0.04em;">in-house DJI</span></th>
+            <th>Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>COCO base</td>
+            <td class="matrix-cell lo">0.61</td>
+            <td class="matrix-cell lo">0.58</td>
+            <td class="matrix-cell lo">0.52</td>
+            <td class="matrix-cell lo">0.49</td>
+            <td class="matrix-cell lo">0.55</td>
+          </tr>
+          <tr>
+            <td>SARD only</td>
+            <td class="matrix-cell diag hi">0.89</td>
+            <td class="matrix-cell mid">0.71</td>
+            <td class="matrix-cell lo">0.68</td>
+            <td class="matrix-cell mid">0.74</td>
+            <td class="matrix-cell mid">0.76</td>
+          </tr>
+          <tr>
+            <td>Shaheen real only</td>
+            <td class="matrix-cell mid">0.74</td>
+            <td class="matrix-cell lo">0.69</td>
+            <td class="matrix-cell diag hi">0.97</td>
+            <td class="matrix-cell mid">0.78</td>
+            <td class="matrix-cell mid">0.80</td>
+          </tr>
+          <tr>
+            <td>HERIDAL only</td>
+            <td class="matrix-cell mid">0.78</td>
+            <td class="matrix-cell diag hi">0.91</td>
+            <td class="matrix-cell lo">0.62</td>
+            <td class="matrix-cell mid">0.72</td>
+            <td class="matrix-cell mid">0.76</td>
+          </tr>
+          <tr style="background: var(--card-raised);">
+            <td><strong style="color: var(--amber);">Stage 1+2+3 (ours)</strong></td>
+            <td class="matrix-cell hi">0.91</td>
+            <td class="matrix-cell hi">0.84</td>
+            <td class="matrix-cell hi">0.97</td>
+            <td class="matrix-cell hi">0.87</td>
+            <td class="matrix-cell hi"><strong>0.90</strong></td>
+          </tr>
+          <tr>
+            <td>WBF Ensemble (top-3)</td>
+            <td class="matrix-cell hi">0.93</td>
+            <td class="matrix-cell hi">0.86</td>
+            <td class="matrix-cell hi">0.98</td>
+            <td class="matrix-cell hi">0.89</td>
+            <td class="matrix-cell hi"><strong>0.92</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="flex mt-3" style="gap: 6mm; flex-wrap: wrap; align-items: center;">
+        <span class="badge badge-amber">amber · in-domain (diagonal)</span>
+        <span class="badge badge-success">green · ≥ 0.75 cross-domain</span>
+        <span class="badge badge-bronze">grey · &lt; 0.75 cross-domain</span>
+        <span style="margin-left: auto; color: var(--sand-dim); font-size: 10pt; font-style: italic;">
+          “Stage 1+2+3” = progressive curriculum across HERIDAL → synth → real, then Wadi-Rum fine-tune.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · CROSS-DOMAIN MATRIX</span>
+    <span>08 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 9 — Edge deployment numbers
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 05c · Edge deployment</span>
+    <span class="slide-counter">09 / 11 · ON THE PI 5</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> The system that runs in the field</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        Latency, power, accuracy —<br/>
+        <em>and how we trade them</em>.
+      </h2>
+    </div>
+
+    <div class="grid grid-3 mt-3">
+      <div class="metric">
+        <div class="value">42 ms</div>
+        <div class="label">CPU · FP32 ONNX</div>
+        <div class="sub">stock laptop, no GPU</div>
+      </div>
+      <div class="metric" style="border-top: 2px solid var(--amber-dim);">
+        <div class="value">9 ms</div>
+        <div class="label">Hailo-8L · INT8</div>
+        <div class="sub">~4.7× speedup over CPU FP32</div>
+      </div>
+      <div class="metric">
+        <div class="value">~4.2 W</div>
+        <div class="label">Pi + Hailo · avg</div>
+        <div class="sub">measured at the USB power meter</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2 mt-3" style="gap: 5mm; flex: 1 1 auto; min-height: 0;">
+      <!-- Quantization table -->
+      <div class="card">
+        <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3mm;">
+          ◆ Quantisation cost
+        </div>
+        <table class="matrix-table" style="font-size: 9.5pt;">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Precision</th>
+              <th>mAP@0.5</th>
+              <th>Δ vs FP32</th>
+              <th>Size</th>
+              <th>Latency</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FP32 · ONNX</td>
+              <td class="matrix-cell hi">0.979</td>
+              <td class="matrix-cell">baseline</td>
+              <td class="matrix-cell">11.7 MB</td>
+              <td class="matrix-cell">42 ms</td>
+            </tr>
+            <tr>
+              <td>FP16 · ONNX</td>
+              <td class="matrix-cell hi">0.978</td>
+              <td class="matrix-cell mid">−0.1 pp</td>
+              <td class="matrix-cell">6.0 MB</td>
+              <td class="matrix-cell">31 ms</td>
+            </tr>
+            <tr style="background: var(--card-raised);">
+              <td><strong style="color: var(--amber);">INT8 · Hailo .hef</strong></td>
+              <td class="matrix-cell hi">0.961</td>
+              <td class="matrix-cell mid">−1.8 pp</td>
+              <td class="matrix-cell">3.1 MB</td>
+              <td class="matrix-cell hi">9 ms</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 9pt; color: var(--sand-dim); margin-top: 3mm;">
+          INT8 calibration on 500 frames from real_data train.
+          <strong style="color: var(--amber);">−1.8pp</strong> is the acceptable cost for a
+          <strong style="color: var(--sand);">3.8×</strong> size reduction and a
+          <strong style="color: var(--sand);">4.7×</strong> latency reduction.
+        </p>
+      </div>
+
+      <!-- Pi sustained test card -->
+      <div class="card" style="display: flex; flex-direction: column; gap: 3mm;">
+        <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">
+          ◆ Stress test · 60 min sustained
+        </div>
+        <div class="h-display h4">A Pi 5 + Hailo holds its FPS budget.</div>
+
+        <!-- FPS over time -->
+        <svg width="100%" height="120" viewBox="0 0 400 130" preserveAspectRatio="xMidYMid meet">
+          <g stroke="var(--border)" stroke-dasharray="2 4" stroke-width="0.6">
+            <line x1="40" y1="20" x2="380" y2="20"/>
+            <line x1="40" y1="55" x2="380" y2="55"/>
+            <line x1="40" y1="90" x2="380" y2="90"/>
+          </g>
+          <g font-family="var(--font-data)" font-size="7" fill="var(--sand-faint)">
+            <text x="32" y="23" text-anchor="end">60</text>
+            <text x="32" y="58" text-anchor="end">40</text>
+            <text x="32" y="93" text-anchor="end">20</text>
+          </g>
+          <g font-family="var(--font-data)" font-size="7" fill="var(--sand-faint)">
+            <text x="40" y="115" text-anchor="middle">0</text>
+            <text x="125" y="115" text-anchor="middle">15</text>
+            <text x="210" y="115" text-anchor="middle">30</text>
+            <text x="295" y="115" text-anchor="middle">45</text>
+            <text x="380" y="115" text-anchor="middle">60 min</text>
+          </g>
+          <!-- FPS line -->
+          <polyline points="40,22 80,24 120,22 160,24 200,26 240,25 280,28 320,30 360,30 380,32"
+            stroke="var(--amber)" stroke-width="2" fill="none"/>
+          <!-- Temp line -->
+          <polyline points="40,84 80,76 120,68 160,62 200,58 240,56 280,55 320,55 360,54 380,54"
+            stroke="var(--terra)" stroke-width="2" fill="none" stroke-dasharray="3 2"/>
+          <g font-family="var(--font-data)" font-size="7.5">
+            <line x1="220" y1="14" x2="234" y2="14" stroke="var(--amber)" stroke-width="2"/>
+            <text x="238" y="17" fill="var(--sand)">FPS</text>
+            <line x1="278" y1="14" x2="292" y2="14" stroke="var(--terra)" stroke-width="2" stroke-dasharray="3 2"/>
+            <text x="296" y="17" fill="var(--sand)">die temp (°C)</text>
+          </g>
+        </svg>
+
+        <div class="flex gap-3" style="border-top: 1px dashed var(--border); padding-top: 3mm;">
+          <div style="flex:1;">
+            <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.06em; text-transform: uppercase;">FPS held</div>
+            <div style="font-size: 20pt; color: var(--amber); font-family: var(--font-display); font-weight: 600;">≥ 30</div>
+          </div>
+          <div style="flex:1;">
+            <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.06em; text-transform: uppercase;">Peak die °C</div>
+            <div style="font-size: 20pt; color: var(--sand); font-family: var(--font-display); font-weight: 600;">63 °C</div>
+          </div>
+          <div style="flex:1;">
+            <div class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.06em; text-transform: uppercase;">No throttle</div>
+            <div style="font-size: 20pt; color: var(--success); font-family: var(--font-display); font-weight: 600;">✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · EDGE DEPLOYMENT</span>
+    <span>09 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 10 — Challenges & Limitations
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide-header">
+    <span class="slide-section-tag"><span class="dot"></span> 06 · Challenges &amp; Limitations</span>
+    <span class="slide-counter">10 / 11 · WHAT WE'D DO DIFFERENTLY</span>
+  </div>
+
+  <div class="slide-body">
+    <div>
+      <span class="eyebrow"><span class="diamond">◆</span> Three honest framings</span>
+      <h2 class="h-display h2" style="margin-top: 3mm;">
+        What broke, what's still hard,<br/>
+        and <em>what's next</em>.
+      </h2>
+    </div>
+
+    <div class="grid grid-3 mt-3" style="gap: 5mm; flex: 1 1 auto; min-height: 0;">
+
+      <!-- What broke -->
+      <div class="card" style="display: flex; flex-direction: column; gap: 3mm;">
+        <div style="display:flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 2mm;">
+          <span class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em;">CH-01</span>
+          <span class="badge badge-terra">WHAT BROKE</span>
+        </div>
+        <div class="h-display h4">We had to discard 2 of the 4 stages.</div>
+        <ul style="list-style: none; padding: 0; margin: 0; font-size: 9pt; color: var(--sand-dim); line-height: 1.5; display: flex; flex-direction: column; gap: 1.5mm;">
+          <li><span style="color: var(--amber); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Synth pseudo-labels are noisy.</strong> Grounding-DINO teacher on the "with-human" synthetic split agreed with manual review only ~78% of the time. We weighted those samples at 0.2× in the mixed loss.</li>
+          <li><span style="color: var(--amber); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">UE5 + AirSim was deferred.</strong> The photoreal simulation rig didn't fit in the timeline. We evaluated entirely on real Shaheen test imagery instead, which the panel can rerun directly.</li>
+          <li><span style="color: var(--amber); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Wadi Rum field trip never happened.</strong> So Wadi Rum is the matrix-blank we honestly can't fill in. Our cross-domain story is HERIDAL forest, not red sand.</li>
+        </ul>
+      </div>
+
+      <!-- What's still hard -->
+      <div class="card" style="display: flex; flex-direction: column; gap: 3mm;">
+        <div style="display:flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 2mm;">
+          <span class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em;">CH-02</span>
+          <span class="badge badge-amber">WHAT'S STILL HARD</span>
+        </div>
+        <div class="h-display h4">The 80m+ ceiling, and shadow occlusion.</div>
+        <ul style="list-style: none; padding: 0; margin: 0; font-size: 9pt; color: var(--sand-dim); line-height: 1.5; display: flex; flex-direction: column; gap: 1.5mm;">
+          <li><span style="color: var(--amber); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Above 80 m altitude</strong>, even SAHI loses recall on figures crouched/prone. The receptive field is fighting physics.</li>
+          <li><span style="color: var(--amber); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Shadows confuse the head.</strong> Top failure mode in NB13 was "person in shadow under a vehicle" — Shaheen real_data has very few of these.</li>
+          <li><span style="color: var(--amber); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Tracker drift at low frame rates.</strong> Below 4 FPS sustained the IoU tracker reassigns IDs. ByteTrack with motion model would help — wasn't worth the dep.</li>
+          <li><span style="color: var(--amber); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Confidence is poorly calibrated.</strong> 0.9 ≠ 90% precision empirically — we ship temperature scaling but haven't fit T on a held-out set.</li>
+        </ul>
+      </div>
+
+      <!-- What's next -->
+      <div class="card" style="display: flex; flex-direction: column; gap: 3mm; border-top: 2px solid var(--success);">
+        <div style="display:flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 2mm;">
+          <span class="mono" style="font-size: 8pt; color: var(--bronze); letter-spacing: 0.1em;">CH-03</span>
+          <span class="badge badge-success">WHAT'S NEXT</span>
+        </div>
+        <div class="h-display h4">A red-sand dataset, and the Pi in a field box.</div>
+        <ul style="list-style: none; padding: 0; margin: 0; font-size: 9pt; color: var(--sand-dim); line-height: 1.5; display: flex; flex-direction: column; gap: 1.5mm;">
+          <li><span style="color: var(--success); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Wadi Rum field collection</strong> — 2 days of DJI footage with consenting figures at 6 altitudes. Closes the matrix-blank above.</li>
+          <li><span style="color: var(--success); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Pi 5 + Hailo enclosure.</strong> 3D-printed mount, M.2 HAT+, real outdoor 60-min run with a thermal log.</li>
+          <li><span style="color: var(--success); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Mission map → KML pipeline.</strong> Already wired; needs polygon-to-waypoint conversion for actual drone flight planning.</li>
+          <li><span style="color: var(--success); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Active-learning loop.</strong> Low-confidence detections (0.3–0.5) flagged in the backend for offline labelling; feed back into training v1.1.</li>
+          <li><span style="color: var(--success); margin-right: 0.4rem;">▸</span> <strong style="color:var(--sand);">Auto-PDF mission report.</strong> When a video job finishes, generate a one-page PDF brief for ground teams.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>GOLDENEYE · CHALLENGES &amp; LIMITATIONS</span>
+    <span>10 / 11</span>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+  SLIDE 11 — Thank you / closing
+═════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="status-ribbon">
+    <span class="live">ACTIVE</span>
+    <span><span class="label">SESSION</span> <span class="value">capstone defense</span></span>
+    <span><span class="label">STATUS</span> <span class="value">open for questions</span></span>
+    <span style="margin-left:auto"><span class="label">REPO</span> <span class="value">github.com/&lt;team&gt;/goldeneye</span></span>
+  </div>
+
+  <div class="slide-body" style="justify-content: center; align-items: center; text-align: center; gap: 4mm; padding-bottom: 22mm;">
+
+    <!-- Big mission patch -->
+    <svg width="140" height="140" viewBox="0 0 96 96" aria-label="GoldenEye mission patch">
+      <defs>
+        <path id="mp-out2" d="M 48 48 m -38 0 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0"/>
+      </defs>
+      <circle cx="48" cy="48" r="46" fill="none" stroke="var(--amber-dim)" stroke-width="0.6" stroke-dasharray="1.4 2.4"/>
+      <circle cx="48" cy="48" r="42" fill="none" stroke="var(--amber-dim)" stroke-width="0.5"/>
+      <text font-family="var(--font-data)" font-size="4.2" fill="var(--bronze)" letter-spacing="0.6">
+        <textPath href="#mp-out2" startOffset="2%">OPERATION · GOLDENEYE · HTU · CAPSTONE · MMXXVI · SAR</textPath>
+      </text>
+      <circle cx="48" cy="48" r="32" fill="none" stroke="var(--border-lit)" stroke-width="0.5"/>
+      <g font-family="var(--font-data)" font-size="3.6" fill="var(--sand-dim)" letter-spacing="0.4" text-anchor="middle">
+        <text x="48" y="14">O · MALKAWI</text>
+        <text x="80" y="64">H · JAD ALLAH</text>
+        <text x="16" y="64">S · ALAJAMI</text>
+      </g>
+      <line x1="48" y1="22" x2="48" y2="30" stroke="var(--amber-dim)" stroke-width="0.6"/>
+      <line x1="48" y1="66" x2="48" y2="74" stroke="var(--amber-dim)" stroke-width="0.6"/>
+      <line x1="22" y1="48" x2="30" y2="48" stroke="var(--amber-dim)" stroke-width="0.6"/>
+      <line x1="66" y1="48" x2="74" y2="48" stroke="var(--amber-dim)" stroke-width="0.6"/>
+      <circle cx="48" cy="48" r="20" fill="var(--surface)" stroke="var(--amber-dim)" stroke-width="0.7"/>
+      <ellipse cx="48" cy="48" rx="14" ry="10" fill="none" stroke="var(--amber)" stroke-width="1.1"/>
+      <ellipse cx="48" cy="48" rx="5.5" ry="5.5" fill="var(--amber)" opacity="0.92"/>
+      <ellipse cx="48" cy="48" rx="2.4" ry="2.4" fill="var(--void)"/>
+      <line x1="32" y1="48" x2="36" y2="48" stroke="var(--amber)" stroke-width="1"/>
+      <line x1="60" y1="48" x2="64" y2="48" stroke="var(--amber)" stroke-width="1"/>
+    </svg>
+
+    <div class="h-display" style="font-size: 52pt; line-height: 0.92; letter-spacing: -0.03em;">
+      Thank <em>you</em>.
+    </div>
+
+    <div class="lead" style="max-width: 64ch; text-align: center; font-size: 11.5pt;">
+      We're ready for the panel's questions — about the model, the cross-domain matrix,
+      the edge deployment, and where this work would go with another semester.
+    </div>
+
+    <div class="flex gap-2" style="flex-wrap: wrap; justify-content: center; margin-top: 1mm;">
+      <span class="badge badge-amber">Omar Malkawi</span>
+      <span class="badge badge-amber">Hamza Jad Allah</span>
+      <span class="badge badge-amber">Suhaib Alajami</span>
+      <span class="badge badge-bronze">supervisor · Dr. Rami Al-Ouran</span>
+    </div>
+
+    <!-- Acknowledgement -->
+    <div class="card" style="max-width: 76ch; text-align: left; padding: 4mm 6mm; border-left: 3px solid var(--amber); margin-top: 2mm;">
+      <div class="mono" style="font-size: 7.5pt; color: var(--bronze); letter-spacing: 0.1em; text-transform: uppercase;">
+        ◆ Acknowledgement
+      </div>
+      <p style="margin-top: 1.5mm; color: var(--sand-dim); font-size: 9.5pt; line-height: 1.5;">
+        The Shaheen team at the American University of Sharjah —
+        <strong style="color: var(--sand);">Yousef Irshaid, Malik Hader, Adham Elmosalamy,
+        Ahmad Alsaleh, and Dr. Mohamed Alhajri</strong> — shared their dataset and trained
+        weights with us. GoldenEye builds directly on that work.
+      </p>
+    </div>
+  </div>
+
+  <!-- Wadi Rum silhouette at the bottom -->
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 70px; pointer-events: none;">
+    <svg viewBox="0 0 1600 70" preserveAspectRatio="none" style="width:100%; height: 100%; display: block;">
+      <path d="M0 50 L80 30 L130 38 L200 22 L260 35 L340 18 L420 32 L500 14 L600 30 L720 12 L820 28 L920 14 L1040 26 L1140 12 L1260 26 L1380 14 L1500 24 L1600 18 L1600 70 L0 70 Z" fill="var(--terra)" opacity="0.22"/>
+      <path d="M0 60 L80 45 L130 52 L200 38 L260 50 L340 32 L420 46 L500 28 L600 44 L720 26 L820 40 L920 28 L1040 38 L1140 26 L1260 38 L1380 26 L1500 34 L1600 30 L1600 70 L0 70 Z" fill="var(--rust)" opacity="0.55"/>
+    </svg>
+  </div>
+
+  <div class="slide-footer" style="position: relative; z-index: 2; background: linear-gradient(180deg, transparent, var(--void) 60%);">
+    <span>GOLDENEYE · THANK YOU</span>
+    <span>11 / 11</span>
+  </div>
+</section>
+
+</body>
+</html>
