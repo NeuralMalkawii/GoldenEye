@@ -10,6 +10,7 @@ on:
     paths:
       - "src/**"
       - "models/**"
+      - "requirements.txt"
       - "pyproject.toml"
       - "deploy/docker/api.Dockerfile"
       - "deploy/docker/start.sh"
