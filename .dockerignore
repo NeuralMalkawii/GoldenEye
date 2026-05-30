@@ -1,0 +1,36 @@
+# Keep the build context small + fast. The API image only needs
+# pyproject.toml, src/, and models/ (see deploy/docker/api.Dockerfile).
+.git
+.github
+.claude
+
+# Frontend build artifacts (huge; not used by the API image)
+src/frontend/node_modules
+src/frontend/.next
+src/frontend/out
+
+# Python caches / venvs
+**/__pycache__
+**/*.pyc
+.venv
+venv
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Runtime artifacts (regenerated at runtime; not for the image)
+uploads/
+jobs/
+
+# Presentation / report assets (not part of the app)
+*.pptx
+*.docx
+presentation.html
+presentation_assets/
+_gen_demo.py
+render_to_pptx.py
+build_editable_pptx.py
+
+# Tests & docs (not needed in the runtime image)
+tests/
+docs/

@@ -1,0 +1,61 @@
+# DigitalOcean App Platform spec for GoldenEye (full stack: API + Celery worker + Redis).
+#
+# WHY THIS FILE EXISTS
+#   App Platform auto-detection failed ("No components detected") because the
+#   repo root has no requirements.txt / Dockerfile / package.json — the
+#   Dockerfiles live in deploy/docker/ and App Platform ignores docker-compose.
+#   This spec declares the component explicitly, so detection is not needed.
+#
+# HOW TO DEPLOY
+#   Option A (CLI):   doctl apps create --spec .do/app.yaml
+#   Option B (UI):    Apps -> Create App -> "Import from App Spec" -> paste this file
+#   Updates afterward: pushes to `main` auto-deploy (deploy_on_push: true).
+#
+# NOTE ON THE WORKER
+#   The web server and Celery worker run in ONE container (run_command ->
+#   deploy/docker/start.sh) because App Platform components do not share a
+#   filesystem, and video jobs read/write uploads/ and jobs/ on local disk.
+
+name: goldeneye
+region: fra        # Frankfurt — closest DigitalOcean region to Jordan. Change if you prefer.
+
+services:
+  - name: api
+    dockerfile_path: deploy/docker/api.Dockerfile
+    source_dir: /
+    github:
+      repo: NeuralMalkawii/GoldenEye
+      branch: main
+      deploy_on_push: true
+    run_command: sh start.sh
+    http_port: 8000
+    instance_count: 1
+    instance_size_slug: basic-xs      # >=1 GB RAM (onnxruntime + opencv + worker). Bump to basic-s if it OOMs.
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 30
+    routes:
+      - path: /
+    envs:
+      - key: MODEL_PATH
+        value: models/best.onnx
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.25"
+      - key: NMS_IOU_THRESHOLD
+        value: "0.45"
+      - key: MAX_UPLOAD_MB
+        value: "200"
+      - key: CORS_ORIGINS
+        # The Vercel frontend origin(s) allowed to call this API (comma-separated).
+        value: https://frontend-iota-eight-20.vercel.app
+      - key: REDIS_URL
+        # Binds to the managed Redis below. Resolves to a TLS rediss:// URL,
+        # which src/api/workers.py now handles.
+        value: ${redis.DATABASE_URL}
+
+databases:
+  - name: redis
+    engine: REDIS
+    production: false   # Dev-tier Valkey. If your account requires a managed cluster,
+                        # create one in the console; the ${redis.DATABASE_URL} binding
+                        # above will still resolve to it.

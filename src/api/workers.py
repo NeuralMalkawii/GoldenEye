@@ -15,8 +15,21 @@ from src.api.inference.onnx_engine import ONNXEngine
 
 settings = get_settings()
 
-app = Celery("goldeneye", broker=settings.redis_url, backend=settings.redis_url)
+# Managed Redis (DigitalOcean Valkey, etc.) hands out a TLS "rediss://" URL.
+# Celery needs the SSL options set explicitly or the broker connection fails.
+# Plain "redis://" URLs (local / docker-compose) are unaffected.
+_redis_url = settings.redis_url
+_ssl_opts = None
+if _redis_url.startswith("rediss://"):
+    import ssl
+
+    _ssl_opts = {"ssl_cert_reqs": ssl.CERT_NONE}
+
+app = Celery("goldeneye", broker=_redis_url, backend=_redis_url)
 app.conf.update(task_track_started=True, result_expires=3600)
+if _ssl_opts is not None:
+    app.conf.broker_use_ssl = _ssl_opts
+    app.conf.redis_backend_use_ssl = _ssl_opts
 
 _engine: ONNXEngine | None = None
 
